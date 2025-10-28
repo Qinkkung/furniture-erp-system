@@ -2,6 +2,7 @@ package com.furnitureshop.furniture_erp_system.model;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal; // <<< Import BigDecimal
+import java.util.Objects; // <<< Import Objects for null check
 
 @Entity
 @Table(name = "sales_order_items")
@@ -56,7 +57,7 @@ public class SalesOrderItem {
     private int quantity;
 
     @Column(name = "unit_price", nullable = false, precision = 10, scale = 2)
-    private BigDecimal unitPrice; // <<< แก้เป็น BigDecimal
+    private BigDecimal unitPrice; // <<< ใช้ BigDecimal
 
     // --- Relationships ---
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -71,5 +72,20 @@ public class SalesOrderItem {
     public SalesOrderItem() {
     }
 
-  
+    // --- (Method ใหม่ สำหรับคำนวณราคารวม) ---
+    /**
+     * คำนวณราคารวมสำหรับรายการสินค้านี้ (ราคาต่อหน่วย * จำนวน)
+     * @return BigDecimal ของราคารวม หรือ BigDecimal.ZERO ถ้า unitPrice เป็น null
+     */
+    @Transient // <<< บอก JPA ว่าไม่ต้องสร้างคอลัมน์นี้
+    public BigDecimal getItemTotalPrice() {
+        // เพิ่มการตรวจสอบ null ให้ปลอดภัยยิ่งขึ้น
+        if (this.unitPrice == null || this.quantity <= 0) {
+            return BigDecimal.ZERO;
+        }
+        // ใช้ BigDecimal.valueOf(long) เพื่อความชัดเจน
+        return this.unitPrice.multiply(BigDecimal.valueOf((long)this.quantity));
+    }
+
+
 }

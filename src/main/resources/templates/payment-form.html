@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>บันทึกการชำระเงิน</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        .error { color: red; border: 1px solid red; padding: 10px; margin-bottom: 15px; }
+        .success { color: green; border: 1px solid green; padding: 10px; margin-bottom: 15px; }
+        label { display: block; margin-top: 10px; font-weight: bold; }
+        input[type=text], input[type=number], select { width: 300px; padding: 8px; margin-bottom: 5px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { background-color: #4CAF50; color: white; padding: 10px 15px; margin-top: 10px; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #45a049; }
+        a { text-decoration: none; color: #007bff; margin-left: 10px;}
+        a:hover { text-decoration: underline; }
+        .order-summary { margin-bottom: 20px; padding: 15px; background-color: #f9f9f9; border: 1px solid #eee; border-radius: 5px; }
+        .order-summary p { margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <h1>บันทึกการชำระเงินสำหรับ Order: <span th:text="${order.orderID}">SO-XXX</span></h1>
+
+    <div th:if="${errorMessage}" class="error" th:text="${errorMessage}"></div>
+
+    <div class="order-summary">
+        <h4>สรุปยอด</h4>
+        <p>ลูกค้า: <span th:text="${order.customer?.name ?: 'N/A'}"></span></p>
+        <p>ยอดรวมสุทธิ: <span th:text="${order.grandTotal != null ? #numbers.formatDecimal(order.grandTotal, 1, 'COMMA', 2, 'POINT') : 'N/A'}"></span> บาท</p>
+        <p>ยอดชำระแล้ว: <span th:text="${#numbers.formatDecimal(totalPaid, 1, 'COMMA', 2, 'POINT')}"></span> บาท</p>
+        <p style="font-weight: bold;">ยอดคงเหลือ: <span th:text="${#numbers.formatDecimal(remainingAmount, 1, 'COMMA', 2, 'POINT')}"></span> บาท</p>
+        <p>สถานะปัจจุบัน: <span th:text="${order.status}"></span></p>
+    </div>
+
+    <form th:action="@{/sales-orders/payment/save/{id}(id=${order.orderID})}"
+          th:object="${payment}" method="post">
+
+        <div>
+            <label for="amount">จำนวนเงินที่ชำระ:</label>
+            <input type="number" id="amount" name="amount"
+                   th:value="${remainingAmount.compareTo(T(java.math.BigDecimal).ZERO) > 0 ? #numbers.formatDecimal(remainingAmount, 1, 'POINT', 2, 'POINT') : '0.00'}"
+                   min="0.01" step="0.01" required>
+        </div>
+
+        <div>
+            <label for="paymentType">ประเภทการชำระ:</label>
+            <select id="paymentType" name="paymentType" required>
+                <option value="Deposit">มัดจำ (Deposit)</option>
+                <option value="Full">ชำระเต็ม/ส่วนที่เหลือ (Full/Remaining)</option>
+                </select>
+        </div>
+
+        <div>
+            <button type="submit">บันทึกการชำระเงิน</button>
+            <a th:href="@{/sales-orders}">ยกเลิก</a>
+        </div>
+    </form>
+
+</body>
+</html>

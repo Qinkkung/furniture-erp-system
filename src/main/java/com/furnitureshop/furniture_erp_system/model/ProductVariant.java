@@ -3,10 +3,30 @@ package com.furnitureshop.furniture_erp_system.model;
 import jakarta.persistence.*;
 import java.math.BigDecimal; // <<< Import BigDecimal
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.core.type.TypeReference; // <<< เพิ่ม
+import com.fasterxml.jackson.databind.ObjectMapper; // <<< เพิ่ม
+import java.util.Collections; // <<< เพิ่ม
+import java.util.Map; // <<< เพิ่ม
+import jakarta.persistence.Transient;
 
 @Entity
 @Table(name = "product_variants")
 public class ProductVariant {
+	
+	@Transient // <<< บอก JPA ว่าไม่ต้องสร้างคอลัมน์นี้
+	public Map<String, String> getAttributesMap() {
+	    if (this.attributes == null || this.attributes.isEmpty()) {
+	        return Collections.emptyMap(); // คืนค่า Map ว่าง ถ้าไม่มี attributes
+	    }
+	    try {
+	        ObjectMapper mapper = new ObjectMapper();
+	        // แปลง JSON string เป็น Map
+	        return mapper.readValue(this.attributes, new TypeReference<Map<String, String>>() {});
+	    } catch (Exception e) {
+	        System.err.println("Error parsing attributes JSON for variant " + this.variantID + ": " + e.getMessage());
+	        return Collections.emptyMap(); // คืนค่า Map ว่าง ถ้าแปลง Error
+	    }
+	}
 
     @Id
     @Column(name = "variant_id", length = 10)

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>รายละเอียด Sales Order</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        .detail-section { margin-bottom: 20px; padding: 15px; background-color: #f9f9f9; border: 1px solid #eee; border-radius: 5px; }
+        .detail-section h2 { margin-top: 0; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
+        table { border-collapse: collapse; margin-top: 10px; width: 100%;}
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        p { margin: 5px 0; }
+        a { text-decoration: none; color: #007bff; }
+        a:hover { text-decoration: underline; }
+         button { background-color: #6c757d; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; } /* Gray button */
+        button:hover { background-color: #5a6268; }
+        .payment-button button { background-color: #28a745; } /* Green button for payment */
+        .payment-button button:hover { background-color: #218838; }
+    </style>
+</head>
+<body>
+    <h1 th:if="${order != null}">รายละเอียด Sales Order: <span th:text="${order.orderID}">SO-XXX</span></h1>
+    <h1 th:if="${order == null}">ไม่พบ Sales Order</h1>
+
+    <p><a th:href="@{/sales-orders}"><button type="button">&lt; กลับไปหน้ารายการ</button></a></p>
+
+    <div th:if="${order != null}">
+
+        <div class="detail-section">
+            <h2>ข้อมูลทั่วไป</h2>
+            <p><strong>วันที่สั่ง:</strong> <span th:text="${order.orderDate != null ? #temporals.format(order.orderDate, 'dd MMMM yyyy') : 'N/A'}"></span></p>
+            <p><strong>สถานะ:</strong> <span th:text="${order.status}"></span></p>
+            <p><strong>พนักงานขาย:</strong> <span th:text="${order.user?.username ?: 'N/A'}"></span></p>
+        </div>
+
+        <div class="detail-section">
+            <h2>ข้อมูลลูกค้า</h2>
+            <p><strong>รหัสลูกค้า:</strong> <span th:text="${order.customer?.customerID ?: 'N/A'}"></span></p>
+            <p><strong>ชื่อ:</strong> <span th:text="${order.customer?.name ?: 'N/A'}"></span></p>
+            <p><strong>เบอร์โทร:</strong> <span th:text="${order.customer?.phone ?: 'N/A'}"></span></p>
+            <p><strong>ที่อยู่:</strong> <span th:text="${order.customer?.address ?: 'N/A'}"></span></p>
+            <p><strong>โซนจัดส่ง:</strong> <span th:text="${order.customer?.deliveryZone?.zoneName ?: 'N/A'}"></span></p>
+        </div>
+
+        <div class="detail-section">
+            <h2>รายการสินค้า</h2>
+            <table th:if="${order.salesOrderItems != null and not #lists.isEmpty(order.salesOrderItems)}">
+                <thead>
+                    <tr>
+                        <th>SKU</th>
+                        <th>ชื่อสินค้า</th>
+                        <th>จำนวน</th>
+                        <th>ราคา/หน่วย</th>
+                        <th>ราคารวม</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="item : ${order.salesOrderItems}">
+                        <td th:text="${item.productVariant?.skuCode ?: 'N/A'}"></td>
+                        <td>
+                            <span th:text="${item.productVariant?.product?.name ?: (item.productVariant?.skuCode ?: '...')}"></span>
+                             <span th:if="${item.productVariant?.attributes != null}"
+                                  th:text="' (' + ${item.productVariant.attributes} + ')'">
+                             </span>
+                        </td>
+                        <td th:text="${item.quantity}"></td>
+                        <td th:text="${#numbers.formatDecimal(item.unitPrice, 1, 'COMMA', 2, 'POINT')}"></td>
+                        <td th:text="${#numbers.formatDecimal(item.itemTotalPrice, 1, 'COMMA', 2, 'POINT')}"></td>
+                    </tr>
+                </tbody>
+            </table>
+            <p th:if="${order.salesOrderItems == null or #lists.isEmpty(order.salesOrderItems)}">ไม่มีรายการสินค้าในออเดอร์นี้</p>
+        </div>
+
+        <div class="detail-section">
+            <h2>สรุปยอดเงิน</h2>
+            <p><strong>ยอดรวมสุทธิ (Grand Total):</strong> <span th:text="${order.grandTotal != null ? #numbers.formatDecimal(order.grandTotal, 1, 'COMMA', 2, 'POINT') : 'N/A'}"></span> บาท</p>
+        </div>
+
+        <div class="detail-section">
+            <h2>ประวัติการชำระเงิน</h2>
+            <table th:if="${order.payments != null and not #lists.isEmpty(order.payments)}">
+                 <thead>
+                    <tr>
+                        <th>Payment ID</th>
+                        <th>วันที่ชำระ</th>
+                        <th>จำนวนเงิน</th>
+                        <th>ประเภท</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="pay : ${order.payments}">
+                        <td th:text="${pay.paymentID}"></td>
+                        <td th:text="${pay.paymentDate != null ? #temporals.format(pay.paymentDate, 'dd-MM-yyyy') : 'N/A'}"></td>
+                        <td th:text="${#numbers.formatDecimal(pay.amount, 1, 'COMMA', 2, 'POINT')}"></td>
+                        <td th:text="${pay.paymentType}"></td>
+                    </tr>
+                </tbody>
+                 <tfoot>
+                     <tr>
+                         <td colspan="2" style="text-align: right; font-weight: bold;">ยอดชำระรวม:</td>
+                         <td colspan="2" style="font-weight: bold;" th:text="${#numbers.formatDecimal(totalPaidForView, 1, 'COMMA', 2, 'POINT')}"></td>
+                     </tr>
+                 </tfoot>
+            </table>
+             <p th:if="${order.payments == null or #lists.isEmpty(order.payments)}">ยังไม่มีการชำระเงิน</p>
+             <p th:if="${order != null and order.grandTotal != null}" class="payment-button">
+                 <a th:href="@{/sales-orders/payment/{id}(id=${order.orderID})}"
+                    th:if="${order.grandTotal.compareTo(totalPaidForView) > 0}">
+                     <button type="button">ไปหน้าบันทึกชำระเงิน</button>
+                 </a>
+                 <span th:unless="${order.grandTotal.compareTo(totalPaidForView) > 0}" style="color: green; font-weight: bold;">(ชำระครบแล้ว)</span>
+             </p>
+        </div>
+
+        </div>
+
+</body>
+</html>

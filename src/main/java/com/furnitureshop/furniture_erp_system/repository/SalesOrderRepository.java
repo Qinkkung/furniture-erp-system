@@ -1,19 +1,31 @@
 package com.furnitureshop.furniture_erp_system.repository;
 
+import com.furnitureshop.furniture_erp_system.model.SalesOrder;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query; // <<< Import Query
+import org.springframework.data.repository.query.Param; // <<< Import Param
 import org.springframework.stereotype.Repository;
 
-import com.furnitureshop.furniture_erp_system.model.SalesOrder;
+import java.util.List;
+import java.util.Optional; // <<< Import Optional
 
-/**
- * Repository Interface สำหรับ Product Entity
- * JpaRepository<Product, String> หมายถึง:
- * - จัดการ Entity ชื่อ Product
- * - Primary Key ของ Product เป็นชนิด String (คือ productID)
- */
-@Repository // บอก Spring Boot ว่านี่คือ Repository
+@Repository
 public interface SalesOrderRepository extends JpaRepository<SalesOrder, String> {
-    // --- ไม่ต้องเขียนอะไรเพิ่มเลย! ---
-    // JpaRepository มีคำสั่งพื้นฐาน (save, findById, findAll, delete) ให้เราแล้ว
-    // ถ้าต้องการคำสั่งค้นหาพิเศษ ค่อยมาเพิ่มทีหลัง
+
+    List<SalesOrder> findByStatus(String status);
+
+    List<SalesOrder> findByCustomer_CustomerID(String customerId); // (เพิ่มถ้าต้องการ)
+
+    // *** ตรวจสอบ Query นี้ให้ถูกต้อง ***
+    @Query("SELECT so FROM SalesOrder so " +
+           "LEFT JOIN FETCH so.customer c " +
+           "LEFT JOIN FETCH c.deliveryZone dz " +
+           "LEFT JOIN FETCH so.user u " +
+           "LEFT JOIN FETCH so.salesOrderItems soi " +
+           "LEFT JOIN FETCH soi.productVariant pv " + // <<< ต้องมี Fetch Variant
+        // "LEFT JOIN FETCH pv.product p " + // (Optional - อาจไม่จำเป็นสำหรับหน้านี้)
+           "LEFT JOIN FETCH so.payments pay " +
+           "WHERE so.orderID = :id")
+    Optional<SalesOrder> findByIdWithDetails(@Param("id") String id);
+
 }

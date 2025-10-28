@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>จัดการการจัดส่ง</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        .error { color: red; border: 1px solid red; padding: 10px; margin-bottom: 15px; }
+        .success { color: green; border: 1px solid green; padding: 10px; margin-bottom: 15px; }
+        .info { color: blue; border: 1px solid blue; padding: 10px; margin-bottom: 15px; }
+        table { border-collapse: collapse; margin-top: 15px; width: 100%;}
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        a { text-decoration: none; color: #007bff; }
+        a:hover { text-decoration: underline; }
+        .action-links form { margin-right: 5px; display: inline-block;}
+         button { background-color: #007bff; color: white; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em; }
+        button:hover { background-color: #0056b3; }
+        .status-select { padding: 3px; font-size: 0.9em; margin-right: 5px;}
+        hr { margin: 30px 0; border: 0; border-top: 1px solid #eee;}
+    </style>
+</head>
+<body>
+    <h1>จัดการการจัดส่ง</h1>
+
+    <div th:if="${errorMessage}" class="error" th:text="${errorMessage}"></div>
+    <div th:if="${successMessage}" class="success" th:text="${successMessage}"></div>
+    <div th:if="${infoMessage}" class="info" th:text="${infoMessage}"></div>
+
+    <h2>Orders รอสร้างใบจัดส่ง (<span th:text="${#lists.size(awaitingOrders)}">0</span> รายการ)</h2>
+    <div th:if="${#lists.isEmpty(awaitingOrders)}">
+        <p>ไม่มี Order ที่รอสร้างใบจัดส่ง</p>
+    </div>
+    <table th:unless="${#lists.isEmpty(awaitingOrders)}">
+        <thead>
+            <tr>
+                <th>Order ID</th>
+                <th>วันที่สั่ง</th>
+                <th>ลูกค้า</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="order : ${awaitingOrders}">
+                <td th:text="${order.orderID}">SO-XXX</td>
+                <td th:text="${#temporals.format(order.orderDate, 'dd-MM-yyyy')}"></td>
+                <td th:text="${order.customer?.name ?: 'N/A'}"></td>
+                <td>
+                    <form th:action="@{/shipments/create}" method="post">
+                        <input type="hidden" name="orderId" th:value="${order.orderID}" />
+                        <button type="submit">สร้างใบจัดส่ง</button>
+                    </form>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <hr>
+
+    <h2>Shipments กำลังดำเนินการ (<span th:text="${#lists.size(processingShipments)}">0</span> รายการ)</h2>
+    <div th:if="${#lists.isEmpty(processingShipments)}">
+        <p>ไม่มี Shipment ที่กำลังดำเนินการ</p>
+    </div>
+    <table th:unless="${#lists.isEmpty(processingShipments)}">
+        <thead>
+            <tr>
+                <th>Shipment ID</th>
+                <th>Order ID</th>
+                <th>ลูกค้า</th>
+                <th>สถานะปัจจุบัน</th>
+                <th>อัปเดตสถานะ</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="shipment : ${processingShipments}">
+                <td th:text="${shipment.shipmentID}">SH-XXX</td>
+                <td th:text="${shipment.salesOrder?.orderID ?: 'N/A'}"></td>
+                <td th:text="${shipment.salesOrder?.customer?.name ?: 'N/A'}"></td>
+                <td th:text="${shipment.status}"></td>
+                <td>
+                    <form th:action="@{/shipments/updateStatus}" method="post" style="display:flex; align-items: center;">
+                        <input type="hidden" name="shipmentId" th:value="${shipment.shipmentID}" />
+                        <select name="newStatus" class="status-select" required>
+                            <option value="Pending" th:selected="${shipment.status == 'Pending'}">Pending</option>
+                            <option value="Shipped" th:selected="${shipment.status == 'Shipped'}">Shipped</option>
+                            <option value="Delivered">Delivered</option>
+                            </select>
+                        <button type="submit">อัปเดต</button>
+                    </form>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+</body>
+</html>
