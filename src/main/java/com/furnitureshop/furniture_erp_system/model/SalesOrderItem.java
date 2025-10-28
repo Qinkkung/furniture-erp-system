@@ -1,0 +1,75 @@
+package com.furnitureshop.furniture_erp_system.model;
+
+import jakarta.persistence.*;
+import java.math.BigDecimal; // <<< Import BigDecimal
+
+@Entity
+@Table(name = "sales_order_items")
+public class SalesOrderItem {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "order_item_id")
+    private Integer orderItemID;
+
+    public Integer getOrderItemID() {
+		return orderItemID;
+	}
+
+	public void setOrderItemID(Integer orderItemID) {
+		this.orderItemID = orderItemID;
+	}
+
+	public int getQuantity() {
+		return quantity;
+	}
+
+	public void setQuantity(int quantity) {
+		this.quantity = quantity;
+	}
+
+	public BigDecimal getUnitPrice() {
+		return unitPrice;
+	}
+
+	public void setUnitPrice(BigDecimal unitPrice) {
+		this.unitPrice = unitPrice;
+	}
+
+	public SalesOrder getSalesOrder() {
+		return salesOrder;
+	}
+
+	public void setSalesOrder(SalesOrder salesOrder) {
+		this.salesOrder = salesOrder;
+	}
+
+	public ProductVariant getProductVariant() {
+		return productVariant;
+	}
+
+	public void setProductVariant(ProductVariant productVariant) {
+		this.productVariant = productVariant;
+	}
+
+	@Column(name = "quantity", nullable = false)
+    private int quantity;
+
+    @Column(name = "unit_price", nullable = false, precision = 10, scale = 2)
+    private BigDecimal unitPrice; // <<< แก้เป็น BigDecimal
+
+    // --- Relationships ---
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "order_id", nullable = false)
+    private SalesOrder salesOrder;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "variant_id", nullable = false)
+    private ProductVariant productVariant;
+
+    // --- Constructor ---
+    public SalesOrderItem() {
+    }
+
+  
+}

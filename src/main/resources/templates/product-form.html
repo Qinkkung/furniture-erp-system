@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${product.productID == null ? 'เพิ่มสินค้าใหม่' : 'แก้ไขสินค้า'}"></title>
+</head>
+<body>
+    <h1 th:text="${product.productID == null ? 'เพิ่มสินค้าใหม่' : 'แก้ไขสินค้า'}"></h1>
+
+    <form th:action="${product.productID == null ? '/products/save' : '/products/update/' + product.productID}"
+          th:object="${product}" method="post">
+
+        <input type="hidden" th:field="*{productID}" th:if="${product.productID != null}" />
+
+        <div>
+            <label for="productID_display">รหัสสินค้า (ID):</label><br>
+            <input type="text" id="productID_display" th:field="*{productID}" required
+                   th:readonly="${product.productID != null}">
+        </div>
+        <div>
+            <label for="name">ชื่อสินค้า:</label><br>
+            <input type="text" id="name" th:field="*{name}" required>
+        </div>
+        <div>
+            <label for="description">รายละเอียด:</label><br>
+            <textarea id="description" th:field="*{description}" rows="4" cols="50"></textarea>
+        </div>
+        <div>
+            <button type="submit" th:text="${product.productID == null ? 'บันทึกสินค้า' : 'อัปเดตสินค้า'}"></button>
+            <a th:href="@{/products}">ยกเลิก</a>
+        </div>
+    </form>
+
+</body>
+</html>

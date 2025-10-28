@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>รายการสินค้า</title>
+</head>
+<body>
+    <h1>รายการสินค้าทั้งหมด</h1>
+
+    <p><a th:href="@{/products/new}">+ เพิ่มสินค้าใหม่</a></p>
+
+    <div th:if="${productList.isEmpty()}">
+        <p>ยังไม่มีสินค้าในระบบ</p>
+    </div>
+
+    <table border="1" th:unless="${productList.isEmpty()}">
+        <thead>
+            <tr>
+                <th>รหัสสินค้า (ID)</th>
+                <th>ชื่อสินค้า</th>
+                <th>รายละเอียด</th>
+                <th>Action</th> </tr>
+        </thead>
+        <tbody>
+            <tr th:each="product : ${productList}">
+                <td th:text="${product.productID}">P-XXX</td>
+                <td th:text="${product.name}">ชื่อสินค้า...</td>
+                <td th:text="${product.description}">รายละเอียด...</td>
+                <td>
+                    <a th:href="@{/products/edit/{id}(id=${product.productID})}">แก้ไข</a>
+
+                    <form th:action="@{/products/delete/{id}(id=${product.productID})}" method="post" style="display:inline;" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบสินค้านี้?');">
+                        <button type="submit" style="color:red; border:none; background:none; cursor:pointer; padding:0; margin-left: 5px;">ลบ</button>
+                    </form>
+                </td>
+            </tr>
+    </table>
+
+</body>
+</html>

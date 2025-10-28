@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>รายการ Sales Orders</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        .success { color: green; border: 1px solid green; padding: 10px; margin-bottom: 15px; }
+        table { border-collapse: collapse; margin-top: 15px; width: 100%;}
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        a { text-decoration: none; color: #007bff; }
+        a:hover { text-decoration: underline; }
+        .action-links a, .action-links form { margin-right: 5px; display: inline-block;}
+         button { background-color: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        .button-link { background: none!important; border: none; padding: 0!important; color: #007bff; text-decoration: underline; cursor: pointer; font-size: 1em; font-family: sans-serif;}
+        .button-link:hover { text-decoration: none; }
+    </style>
+</head>
+<body>
+    <h1>รายการ Sales Orders</h1>
+
+    <div th:if="${successMessage}" class="success" th:text="${successMessage}"></div>
+
+    <p>
+        <a th:href="@{/sales-orders/new}">
+            <button type="button">+ สร้าง Sales Order ใหม่</button>
+        </a>
+    </p>
+
+    <div th:if="${salesOrderList == null || salesOrderList.isEmpty()}">
+        <p>ยังไม่มี Sales Orders ในระบบ</p>
+    </div>
+
+    <table th:unless="${salesOrderList == null || salesOrderList.isEmpty()}">
+        <thead>
+            <tr>
+                <th>Order ID</th>
+                <th>วันที่</th>
+                <th>ลูกค้า</th>
+                <th>ยอดรวม</th>
+                <th>สถานะ</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="order : ${salesOrderList}">
+                <td th:text="${order.orderID}">SO-XXXX</td>
+                <td th:text="${#temporals.format(order.orderDate, 'dd-MM-yyyy')}">dd-MM-yyyy</td>
+                <td th:text="${order.customer?.name ?: 'N/A'}">ชื่อลูกค้า</td>
+                <td th:text="${#numbers.formatDecimal(order.grandTotal, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                <td th:text="${order.status}">สถานะ</td>
+                <td class="action-links">
+                    <a th:href="@{/sales-orders/view/{id}(id=${order.orderID})}">ดู</a>
+                    <a th:href="@{/sales-orders/payment/{id}(id=${order.orderID})}">บันทึกชำระเงิน</a>
+                    </td>
+            </tr>
+        </tbody>
+    </table>
+
+</body>
+</html>
