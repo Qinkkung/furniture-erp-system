@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper; // <<< เพิ่ม
 import java.util.Collections; // <<< เพิ่ม
 import java.util.Map; // <<< เพิ่ม
 import jakarta.persistence.Transient;
+import jakarta.persistence.Transient; // <<< เพิ่ม
 
 @Entity
 @Table(name = "product_variants")
@@ -27,8 +28,21 @@ public class ProductVariant {
 	        return Collections.emptyMap(); // คืนค่า Map ว่าง ถ้าแปลง Error
 	    }
 	}
+	
+	@Transient // <<< บอก JPA ว่า *ห้าม* สร้างคอลัมน์นี้ในฐานข้อมูล
+	private String productName;
 
-    @Id
+	
+
+    public String getProductName() {
+		return productName;
+	}
+
+	public void setProductName(String productName) {
+		this.productName = productName;
+	}
+
+	@Id
     @Column(name = "variant_id", length = 10)
     private String variantID;
 

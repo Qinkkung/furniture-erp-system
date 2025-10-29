@@ -1,5 +1,6 @@
 package com.furnitureshop.furniture_erp_system.service;
 
+import com.furnitureshop.furniture_erp_system.dto.ProductVariantDropdownDto; // <<< Import DTO
 import com.furnitureshop.furniture_erp_system.model.Category;
 import com.furnitureshop.furniture_erp_system.model.Product;
 import com.furnitureshop.furniture_erp_system.model.ProductVariant;
@@ -7,13 +8,16 @@ import com.furnitureshop.furniture_erp_system.repository.CategoryRepository;
 import com.furnitureshop.furniture_erp_system.repository.ProductRepository;
 import com.furnitureshop.furniture_erp_system.repository.ProductVariantRepository;
 
+import org.hibernate.Hibernate; // <<< Import Hibernate
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional; // Import Transactional
+import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal; // Import BigDecimal (เผื่อใช้ในอนาคต)
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors; // <<< Import Collectors
 
 @Service
 public class ProductService {
@@ -29,67 +33,32 @@ public class ProductService {
 
     // --- Logic การจัดการ Product ---
 
-    /**
-     * ดึงข้อมูล Product ทั้งหมด
-     * @return List ของ Product
-     */
     public List<Product> getAllProducts() {
         return productRepository.findAll();
     }
 
-    /**
-     * ค้นหา Product ตาม ID
-     * @param productId รหัส Product
-     * @return Optional<Product> (อาจจะเจอหรือไม่เจอ)
-     */
     public Optional<Product> getProductById(String productId) {
+        // Optional: Implement findByIdWithCategoriesAndVariants if needed for detail pages
         return productRepository.findById(productId);
     }
 
-    /**
-     * สร้าง Product ใหม่
-     * @param product ข้อมูล Product ที่จะสร้าง
-     * @return Product ที่บันทึกแล้ว
-     */
-    @Transactional // ทำให้การทำงานทั้งหมดนี้ ถ้าผิดพลาดจะ Rollback
+    @Transactional
     public Product createProduct(Product product) {
-        // (Optional) สามารถเพิ่ม Logic การตรวจสอบข้อมูลซ้ำก่อนบันทึกได้
-        // เช่น ตรวจสอบว่า productID ซ้ำหรือไม่
         return productRepository.save(product);
     }
 
-    /**
-     * อัปเดตข้อมูล Product ที่มีอยู่ (อัปเดตเฉพาะ Name และ Description)
-     * @param productId รหัส Product ที่จะอัปเดต
-     * @param productDetails ข้อมูลใหม่จากฟอร์ม
-     * @return Product ที่อัปเดตแล้ว
-     * @throws RuntimeException ถ้าหา Product ไม่เจอ
-     */
-    @Transactional // ทำให้การทำงานทั้งหมดนี้ ถ้าผิดพลาดจะ Rollback
+    @Transactional
     public Product updateProduct(String productId, Product productDetails) {
-        // 1. ค้นหา Product เดิมจาก ID
         Product existingProduct = productRepository.findById(productId)
-                // ถ้าหาไม่เจอ ให้โยน Error ออกไป
                 .orElseThrow(() -> new RuntimeException("Product not found with id: " + productId));
-
-        // 2. อัปเดตเฉพาะฟิลด์ที่ต้องการ (Name, Description)
-        //    (เราไม่ควรให้แก้ไข ProductID)
         existingProduct.setName(productDetails.getName());
         existingProduct.setDescription(productDetails.getDescription());
-
-        // 3. บันทึก Product ที่อัปเดตแล้ว
         return productRepository.save(existingProduct);
     }
 
-    /**
-     * ลบ Product ตาม ID
-     * @param productId รหัส Product ที่จะลบ
-     */
     @Transactional
     public void deleteProduct(String productId) {
-        // (สำคัญ) ในอนาคต ควรตรวจสอบก่อนว่า Product นี้มี Variants
-        // หรือถูกอ้างอิงใน SO/PO หรือไม่ ก่อนที่จะอนุญาตให้ลบ
-        // ถ้ามีการอ้างอิงอยู่ อาจจะต้องป้องกันการลบ หรือใช้วิธี Soft Delete แทน
+        // IMPORTANT: Add checks here later to prevent deleting products with active variants/stock/orders
         Product product = productRepository.findById(productId)
                  .orElseThrow(() -> new RuntimeException("Product not found with id: " + productId));
         productRepository.delete(product);
@@ -112,15 +81,52 @@ public class ProductService {
         return variantRepository.findById(variantId);
     }
 
+    /**
+     * ดึงข้อมูล Variant ทั้งหมดสำหรับ Dropdown (ใช้ DTO)
+     * พร้อมบังคับโหลดชื่อ Product เพื่อแก้ปัญหา Lazy Loading ใน View/JS
+     * @return List ของ ProductVariantDropdownDto
+     */
+    @Transactional(readOnly = true) // ใช้ Transaction เพื่อให้โหลด Lazy ได้
+    public List<ProductVariantDropdownDto> getAllVariantsForDropdown() {
+        List<ProductVariant> variants = variantRepository.findAll();
+        // *** บังคับโหลด Product และใส่ชื่อลง DTO ***
+        return variants.stream()
+                .map(variant -> {
+                    String productName = "Unknown Product"; // Default name
+                    if (variant.getProduct() != null) {
+                        try {
+                            // บังคับโหลด Proxy ของ Product (ถ้ายังเป็น Proxy)
+                            Hibernate.initialize(variant.getProduct());
+                            productName = variant.getProduct().getName(); // ดึงชื่อ Product
+                        } catch (org.hibernate.LazyInitializationException e) {
+                            // Handle cases where session might be closed unexpectedly, though @Transactional should prevent this
+                            System.err.println("LazyInitializationException fetching product name for variant " + variant.getVariantID() + ": " + e.getMessage());
+                        }
+                    }
+                    return new ProductVariantDropdownDto(
+                        variant.getVariantID(),
+                        variant.getSkuCode(),
+                        productName, // <<< ใช้ชื่อ Product ที่โหลดมา
+                        variant.getAttributes(),
+                        variant.getUnitPrice()
+                    );
+                 })
+                .collect(Collectors.toList());
+    }
+
+
     @Transactional
     public ProductVariant createVariant(String productId, ProductVariant variant) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Product not found with id: " + productId));
         variant.setProduct(product);
+        // (Optional) เช็ค SKU ซ้ำก่อน Save
+        // Optional<ProductVariant> existingSku = variantRepository.findBySkuCode(variant.getSkuCode()); // ต้องเพิ่ม Method นี้ใน Repo
+        // if(existingSku.isPresent()) { throw new RuntimeException("SKU Code already exists: " + variant.getSkuCode()); }
         return variantRepository.save(variant);
     }
 
-    // --- Logic การเชื่อม Product กับ Category (Many-to-Many) ---
+    // --- Logic การเชื่อม Product กับ Category ---
 
     @Transactional
     public Product addCategoryToProduct(String productId, String categoryId) {
@@ -128,7 +134,8 @@ public class ProductService {
                 .orElseThrow(() -> new RuntimeException("Product not found: " + productId));
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new RuntimeException("Category not found: " + categoryId));
-
+        // Ensure collections are initialized within the transaction
+        Hibernate.initialize(product.getCategories());
         product.getCategories().add(category);
         return productRepository.save(product);
     }
@@ -139,7 +146,8 @@ public class ProductService {
                 .orElseThrow(() -> new RuntimeException("Product not found: " + productId));
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new RuntimeException("Category not found: " + categoryId));
-
+        // Ensure collections are initialized
+        Hibernate.initialize(product.getCategories());
         product.getCategories().remove(category);
         return productRepository.save(product);
     }

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>รายการใบสั่งซื้อ (PO)</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        table { border-collapse: collapse; margin-top: 15px; width: 100%;}
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        a { text-decoration: none; color: #007bff; }
+        a:hover { text-decoration: underline; }
+        button { background-color: #17a2b8; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; } /* Info color */
+        button:hover { background-color: #138496; }
+        .action-links a, .action-links form { margin-right: 5px; display: inline-block;}
+    </style>
+</head>
+<body>
+    <h1>รายการใบสั่งซื้อ (Purchase Orders)</h1>
+
+    <p>
+        <a th:href="@{/purchase-orders/new}">
+            <button type="button">+ สร้าง PO ใหม่</button>
+        </a>
+    </p>
+
+    <div th:if="${poList == null || poList.isEmpty()}">
+        <p>ยังไม่มีใบสั่งซื้อในระบบ</p>
+    </div>
+
+    <table th:unless="${poList == null || poList.isEmpty()}">
+        <thead>
+            <tr>
+                <th>PO ID</th>
+                <th>วันที่สั่ง</th>
+                <th>ซัพพลายเออร์</th>
+                <th>สถานะ</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="po : ${poList}">
+                <td th:text="${po.poID}">PO-XXXX</td>
+                <td th:text="${#temporals.format(po.orderDate, 'dd-MM-yyyy')}">dd-MM-yyyy</td>
+                <td th:text="${po.supplier?.name ?: 'N/A'}">ชื่อซัพพลายเออร์</td>
+                <td th:text="${po.status}">สถานะ</td>
+                <td class="action-links">
+                    <a th:href="@{/purchase-orders/view/{id}(id=${po.poID})}">ดู</a>
+                    <a th:href="@{/stock/receive/{poId}(poId=${po.poID})}" th:if="${po.status == 'Ordered'}">รับสินค้า</a>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+</body>
+</html>

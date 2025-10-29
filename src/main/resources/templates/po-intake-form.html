@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>รับสินค้า / QC</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        .error { color: red; }
+        table { border-collapse: collapse; margin-top: 15px; width: 100%;}
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        input[type=number] { width: 80px; padding: 5px; }
+        select { padding: 5px; }
+        textarea { width: 200px; }
+        button { background-color: #28a745; color: white; padding: 10px 15px; margin-top: 10px; border: none; border-radius: 4px; cursor: pointer; } /* Success color */
+        button:hover { background-color: #218838; }
+        a { text-decoration: none; color: #007bff; margin-left: 10px;}
+    </style>
+</head>
+<body>
+    <h1>รับสินค้า / QC สำหรับ PO: <span th:text="${purchaseOrder.poID}">PO-XXX</span></h1>
+    <p><strong>ซัพพลายเออร์:</strong> <span th:text="${purchaseOrder.supplier?.name ?: 'N/A'}"></span></p>
+    <p><strong>วันที่สั่ง:</strong> <span th:text="${#temporals.format(purchaseOrder.orderDate, 'dd MMMM yyyy')}"></span></p>
+
+    <form th:action="@{/stock/receive/save/{poId}(poId=${purchaseOrder.poID})}" method="post">
+        <table>
+            <thead>
+                <tr>
+                    <th>SKU</th>
+                    <th>ชื่อสินค้า</th>
+                    <th>จำนวนที่สั่ง</th>
+                    <th>จำนวนที่รับจริง</th>
+                    <th>ผล QC</th>
+                    <th>หมายเหตุ (ถ้า Fail/B-Grade)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="item : ${purchaseOrder.purchaseOrderItems}">
+                    <td th:text="${item.productVariant?.skuCode ?: 'N/A'}"></td>
+                    <td>
+                        <span th:text="${item.productVariant?.product?.name ?: '...'}"></span>
+                        <span th:if="${item.productVariant?.attributes != null}"
+                              th:text="' (' + ${item.productVariant.attributes} + ')'">
+                         </span>
+                    </td>
+                    <td th:text="${item.quantity}"></td>
+                    <td>
+                        <input type="number" th:name="'qty_' + ${item.poItemID}" th:value="${item.quantity}" min="0" required />
+                    </td>
+                    <td>
+                        <select th:name="'qc_' + ${item.poItemID}" required>
+                            <option value="">-- เลือกผล --</option>
+                            <option value="Pass">Pass (ผ่าน)</option>
+                            <option value="Fail">Fail (ไม่ผ่าน)</option>
+                            <option value="B-Grade">B-Grade (มีตำหนิ)</option>
+                        </select>
+                    </td>
+                     <td>
+                        <textarea th:name="'notes_' + ${item.poItemID}" rows="1"></textarea>
+                     </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <button type="submit">ยืนยันการรับสินค้า</button>
+        <a th:href="@{/purchase-orders}">ยกเลิก</a>
+    </form>
+
+</body>
+</html>
