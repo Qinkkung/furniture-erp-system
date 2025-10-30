@@ -7,6 +7,9 @@ import org.springframework.transaction.annotation.Transactional; // สำหร
 import com.furnitureshop.furniture_erp_system.model.Inventory;
 import com.furnitureshop.furniture_erp_system.repository.InventoryRepository; // Import Repository ที่เราสร้าง
 import com.furnitureshop.furniture_erp_system.repository.ProductVariantRepository;
+import java.util.List;
+import java.util.stream.Collectors;
+import com.furnitureshop.furniture_erp_system.model.Inventory;
 
 import java.util.Optional; // สำหรับจัดการกรณีหาข้อมูลไม่เจอ
 
@@ -66,6 +69,19 @@ public class InventoryService {
         } else {
             throw new RuntimeException("Inventory record not found for variant: " + variantId);
         }
+    }
+    
+    @Transactional(readOnly = true) // ใช้ @Transactional เพื่อให้เรียก getAvailableToSell() ได้อย่างปลอดภัย
+    public List<Inventory> getLowStockItems(int threshold) {
+        // 1. ดึง Inventory ทั้งหมด
+        List<Inventory> allInventory = inventoryRepository.findAll();
+        
+        // 2. กรอง (Filter) เฉพาะรายการที่ ATS < threshold
+        List<Inventory> lowStock = allInventory.stream()
+                .filter(inventory -> inventory.getAvailableToSell() < threshold)
+                .collect(Collectors.toList());
+                
+        return lowStock;
     }
 
     // --- Logic การตัดสต็อกจริง (จาก Pseudocode - สำหรับ SO Delivered) ---

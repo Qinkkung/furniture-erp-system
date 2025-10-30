@@ -36,5 +36,10 @@ public interface PurchaseOrderRepository extends JpaRepository<PurchaseOrder, St
            "LEFT JOIN FETCH po.supplier s " + // <<< บังคับดึง Supplier
            "ORDER BY po.orderDate DESC") // <<< เรียงลำดับ (Optional)
     List<PurchaseOrder> findAllWithSupplier(); // <<< ตั้งชื่อใหม่
+    
+ // (Imports java.util.List ต้องมีอยู่แล้ว)
+
+    // *** เพิ่ม Method นี้ สำหรับค้นหา PO ตามสถานะ ***
+    List<PurchaseOrder> findByStatus(String status);
 
 }
