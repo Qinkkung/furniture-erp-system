@@ -1,29 +1,28 @@
 package com.furnitureshop.furniture_erp_system.controller;
 
-import com.furnitureshop.furniture_erp_system.dto.ProductVariantDropdownDto; // <<< Import DTO
+import com.furnitureshop.furniture_erp_system.dto.ProductVariantDropdownDto;
 import com.furnitureshop.furniture_erp_system.model.PurchaseOrder;
 import com.furnitureshop.furniture_erp_system.model.Supplier;
-import com.furnitureshop.furniture_erp_system.model.ProductVariant; // <<< Import ProductVariant
+import com.furnitureshop.furniture_erp_system.model.ProductVariant;
 import com.furnitureshop.furniture_erp_system.repository.PurchaseOrderRepository;
 import com.furnitureshop.furniture_erp_system.repository.SupplierRepository;
-import com.furnitureshop.furniture_erp_system.repository.ProductVariantRepository; // <<< Import Variant Repo
-import com.furnitureshop.furniture_erp_system.service.ProductService; // <<< Import ProductService
+import com.furnitureshop.furniture_erp_system.repository.ProductVariantRepository;
+import com.furnitureshop.furniture_erp_system.service.ProductService;
 import com.furnitureshop.furniture_erp_system.service.PurchaseOrderService;
-// Import DTO ที่ซ้อนอยู่ใน Service (หรือย้าย DTO ออกมาไฟล์แยก)
 import com.furnitureshop.furniture_erp_system.service.PurchaseOrderService.PurchaseOrderItemDto;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*; // ใช้ * เพื่อ import ทั้งหมด
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.math.BigDecimal; // <<< Import BigDecimal
-import java.net.URLDecoder; // <<< Import URLDecoder
-import java.nio.charset.StandardCharsets; // <<< Import StandardCharsets
+import java.math.BigDecimal;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import com.fasterxml.jackson.databind.ObjectMapper; // <<< Import ObjectMapper
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 
 @Controller
@@ -33,15 +32,16 @@ public class PurchaseOrderController {
     @Autowired private PurchaseOrderRepository purchaseOrderRepository;
     @Autowired private PurchaseOrderService purchaseOrderService;
     @Autowired private SupplierRepository supplierRepository;
-    @Autowired private ProductVariantRepository variantRepository; // <<< เพิ่ม Autowired Variant Repo (อาจไม่จำเป็นถ้าเรียกผ่าน Service)
-    @Autowired private ProductService productService; // <<< เพิ่ม Autowired ProductService
+    @Autowired private ProductVariantRepository variantRepository;
+    @Autowired private ProductService productService;
 
     /**
-     * แสดงรายการ PO ทั้งหมด
+     * แสดงรายการ PO ทั้งหมด (แก้ไขให้เรียก Method ใหม่)
      */
     @GetMapping("")
     public String listPurchaseOrders(Model model) {
-        List<PurchaseOrder> poList = purchaseOrderRepository.findAll(); // Add sorting later if needed
+        // *** แก้ไข: เรียก findAllWithSupplier() แทน findAll() ***
+        List<PurchaseOrder> poList = purchaseOrderRepository.findAllWithSupplier();
         model.addAttribute("poList", poList);
         return "purchase-order-list";
     }
@@ -52,12 +52,9 @@ public class PurchaseOrderController {
     @GetMapping("/new")
     public String showCreatePurchaseOrderForm(Model model) {
         List<Supplier> suppliers = supplierRepository.findAll();
-        // *** เรียกใช้ Service เพื่อดึง DTO ***
-        List<ProductVariantDropdownDto> variantsDto = productService.getAllVariantsForDropdown(); // <<< ใช้ DTO
-
+        List<ProductVariantDropdownDto> variantsDto = productService.getAllVariantsForDropdown();
         model.addAttribute("suppliers", suppliers);
-        model.addAttribute("variantsDto", variantsDto); // <<< ส่ง DTO ไปชื่อ "variantsDto"
-
+        model.addAttribute("variantsDto", variantsDto);
         return "purchase-order-form";
     }
 
@@ -67,19 +64,16 @@ public class PurchaseOrderController {
     @PostMapping("/save")
     public String createPurchaseOrder(
             @RequestParam("supplierId") String supplierId,
-            @RequestParam(name = "itemsJson", required = false) List<String> encodedItemsJsonList, // <<< รับค่าที่ Encode มา
+            @RequestParam(name = "itemsJson", required = false) List<String> encodedItemsJsonList,
             RedirectAttributes redirectAttributes) {
 
         List<PurchaseOrderItemDto> itemsDtoList = new ArrayList<>();
         if (encodedItemsJsonList != null && !encodedItemsJsonList.isEmpty()) {
             ObjectMapper objectMapper = new ObjectMapper();
-            for (String encodedItemJson : encodedItemsJsonList) { // <<< วนลูปค่าที่ Encode มา
+            for (String encodedItemJson : encodedItemsJsonList) {
                 try {
-                    // *** Decode the JSON string first ***
-                    String itemJson = URLDecoder.decode(encodedItemJson, StandardCharsets.UTF_8.toString()); // <<< Decode กลับ
-                    // Convert JSON string back to DTO
+                    String itemJson = URLDecoder.decode(encodedItemJson, StandardCharsets.UTF_8.toString());
                     PurchaseOrderItemDto dto = objectMapper.readValue(itemJson, PurchaseOrderItemDto.class);
-                    // Basic validation
                     if (dto.getVariantId() == null || dto.getVariantId().isEmpty()
                         || dto.getQuantity() <= 0
                         || dto.getCostPerUnit() == null || dto.getCostPerUnit().compareTo(BigDecimal.ZERO) < 0) {
@@ -88,25 +82,22 @@ public class PurchaseOrderController {
                     itemsDtoList.add(dto);
                 } catch (Exception e) {
                     redirectAttributes.addFlashAttribute("errorMessage", "ข้อมูลรายการสินค้าไม่ถูกต้อง (Decode/Parse Error): " + e.getMessage());
-                    return "redirect:/purchase-orders/new"; // Go back to form with error
+                    return "redirect:/purchase-orders/new";
                 }
             }
         } else {
-             // If no items were added
              redirectAttributes.addFlashAttribute("errorMessage", "กรุณาเพิ่มรายการสินค้าอย่างน้อย 1 รายการ");
              return "redirect:/purchase-orders/new";
         }
 
         try {
-            // Call the service to create the PO
             PurchaseOrder createdPO = purchaseOrderService.createPurchaseOrder(supplierId, itemsDtoList);
             redirectAttributes.addFlashAttribute("successMessage", "สร้าง Purchase Order '" + createdPO.getPoID() + "' สำเร็จ!");
-            return "redirect:/purchase-orders"; // Redirect to the PO list page
+            return "redirect:/purchase-orders";
 
         } catch (RuntimeException e) {
-            // If service throws an error (e.g., supplier not found)
             redirectAttributes.addFlashAttribute("errorMessage", "เกิดข้อผิดพลาดในการสร้าง PO: " + e.getMessage());
-            return "redirect:/purchase-orders/new"; // Go back to form with error
+            return "redirect:/purchase-orders/new";
         }
     }
 
