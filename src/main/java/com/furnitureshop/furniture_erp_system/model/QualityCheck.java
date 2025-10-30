@@ -7,7 +7,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne; // Use OneToOne as one PO Item gets one QC check
+import jakarta.persistence.ManyToOne; // <<< เปลี่ยนจาก OneToOne
 import jakarta.persistence.Table;
 
 /**
@@ -24,39 +24,7 @@ public class QualityCheck {
     @Column(name = "qc_id")
     private Integer qcID; // Matches 3.9: Field 'QC_ID' (PK)
 
-    public Integer getQcID() {
-		return qcID;
-	}
-
-	public void setQcID(Integer qcID) {
-		this.qcID = qcID;
-	}
-
-	public String getStatus() {
-		return status;
-	}
-
-	public void setStatus(String status) {
-		this.status = status;
-	}
-
-	public String getNotes() {
-		return notes;
-	}
-
-	public void setNotes(String notes) {
-		this.notes = notes;
-	}
-
-	public PurchaseOrderItem getPurchaseOrderItem() {
-		return purchaseOrderItem;
-	}
-
-	public void setPurchaseOrderItem(PurchaseOrderItem purchaseOrderItem) {
-		this.purchaseOrderItem = purchaseOrderItem;
-	}
-
-	@Column(name = "status", nullable = false)
+    @Column(name = "status", nullable = false)
     private String status; // Matches 3.9: Field 'Status' (Pending, Pass, Fail, B-Grade)
 
     @Column(name = "notes", columnDefinition = "TEXT")
@@ -64,12 +32,49 @@ public class QualityCheck {
 
     // --- Relationship to PurchaseOrderItem ---
     /**
-     * OneToOne: Each QC record corresponds to exactly one PurchaseOrderItem received.
-     * FetchType.LAZY: Don't load the PO Item unless needed.
+     * *** แก้ไข: เปลี่ยนเป็น ManyToOne ***
+     * QC "หลาย" ครั้ง สามารถเชื่อมโยงไปยัง PO Item "หนึ่ง" รายการได้
+     * (เช่น รับของล็อตแรก 5 ชิ้น QC Pass, ล็อตสอง 5 ชิ้น QC Fail)
      */
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "po_item_id", nullable = false, unique = true) // FK referencing PO_Item, must be unique
+    @ManyToOne(fetch = FetchType.LAZY, optional = false) // <<< แก้เป็น @ManyToOne
+    @JoinColumn(name = "po_item_id", nullable = false) // <<< ลบ unique = true ออก
     private PurchaseOrderItem purchaseOrderItem;
 
+    // --- Constructor ---
+    public QualityCheck() {
+    }
 
+    // --- Getters and Setters ---
+    // (*** อย่าลืม! ลบของเก่าทิ้ง แล้ว Generate Getters/Setters ใหม่ทั้งหมด ***)
+    public Integer getQcID() {
+        return qcID;
+    }
+
+    public void setQcID(Integer qcID) {
+        this.qcID = qcID;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
+    }
+
+    public PurchaseOrderItem getPurchaseOrderItem() {
+        return purchaseOrderItem;
+    }
+
+    public void setPurchaseOrderItem(PurchaseOrderItem purchaseOrderItem) {
+        this.purchaseOrderItem = purchaseOrderItem;
+    }
 }

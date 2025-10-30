@@ -2,27 +2,27 @@ package com.furnitureshop.furniture_erp_system.controller;
 
 import com.furnitureshop.furniture_erp_system.model.PurchaseOrder;
 import com.furnitureshop.furniture_erp_system.model.PurchaseOrderItem;
-import com.furnitureshop.furniture_erp_system.model.QualityCheck; // <<< Import QualityCheck
-import com.furnitureshop.furniture_erp_system.repository.PurchaseOrderItemRepository; // <<< Import PO Item Repo
+import com.furnitureshop.furniture_erp_system.model.QualityCheck;
+import com.furnitureshop.furniture_erp_system.repository.PurchaseOrderItemRepository;
 import com.furnitureshop.furniture_erp_system.repository.PurchaseOrderRepository;
-import com.furnitureshop.furniture_erp_system.repository.QualityCheckRepository; // <<< Import QC Repo (ต้องสร้าง)
-import com.furnitureshop.furniture_erp_system.service.InventoryService; // <<< Import InventoryService
-import com.furnitureshop.furniture_erp_system.service.PurchaseOrderService; // <<< Import PO Service
+import com.furnitureshop.furniture_erp_system.repository.QualityCheckRepository;
+import com.furnitureshop.furniture_erp_system.service.InventoryService;
+import com.furnitureshop.furniture_erp_system.service.PurchaseOrderService;
 
-import jakarta.servlet.http.HttpServletRequest; // <<< Import HttpServletRequest
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import org.slf4j.Logger; // <<< Import Logger
-import org.slf4j.LoggerFactory; // <<< Import LoggerFactory
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set; // <<< Import Set
+import java.util.Set;
 
 @Controller
 @RequestMapping("/stock") // URL หลักสำหรับสต็อก
@@ -33,7 +33,7 @@ public class StockController {
 
     @Autowired private PurchaseOrderRepository purchaseOrderRepository;
     @Autowired private PurchaseOrderItemRepository purchaseOrderItemRepository; // ใช้ดึง Item (อาจไม่จำเป็นถ้าใช้ Fetch)
-    @Autowired private QualityCheckRepository qualityCheckRepository; // <<< Repo QC
+    @Autowired private QualityCheckRepository qualityCheckRepository;
     @Autowired private InventoryService inventoryService;
     @Autowired private PurchaseOrderService purchaseOrderService;
 
@@ -44,8 +44,9 @@ public class StockController {
     public String showPoIntakeForm(@PathVariable("poId") String poId, Model model, RedirectAttributes redirectAttributes) {
         logger.info("Accessing receive form for PO ID: {}", poId); // <<< Log
 
-        // *** ใช้ JOIN FETCH เพื่อดึง Items มาพร้อม PO ***
-        Optional<PurchaseOrder> poOpt = purchaseOrderRepository.findByIdWithItems(poId); // <<< ใช้ Method ที่เราสร้าง
+        // *** แก้ไขจุดที่ 1: ใช้ findByIdWithItems ***
+        // ดึงข้อมูล PO พร้อม Items, Supplier, Variant (ป้องกัน Lazy Loading)
+        Optional<PurchaseOrder> poOpt = purchaseOrderRepository.findByIdWithItems(poId); //
 
         if (poOpt.isEmpty()) {
              logger.warn("PO ID: {} not found.", poId); // <<< Log
@@ -69,7 +70,7 @@ public class StockController {
         // model.addAttribute("existingQcs", existingQcs);
 
         logger.info("Showing receive form for PO ID: {}", poId); // <<< Log
-        return "po-intake-form"; // <<< ชื่อไฟล์ HTML
+        return "po-intake-form"; //
     }
 
     /**
@@ -81,8 +82,9 @@ public class StockController {
                                   RedirectAttributes redirectAttributes) {
         logger.info("Processing intake form submission for PO ID: {}", poId); // <<< Log
 
-        // *** ใช้ JOIN FETCH เพื่อดึง Items มาพร้อม PO ***
-        Optional<PurchaseOrder> poOpt = purchaseOrderRepository.findByIdWithItems(poId); // <<< ใช้ Method ที่เราสร้าง
+        // *** แก้ไขจุดที่ 2: ใช้ findByIdWithItems ***
+        // ดึง PO พร้อม Items อีกครั้ง เพื่อให้แน่ใจว่าได้ข้อมูลครบถ้วน
+        Optional<PurchaseOrder> poOpt = purchaseOrderRepository.findByIdWithItems(poId); //
         
         if (poOpt.isEmpty() || (!"Ordered".equals(poOpt.get().getStatus()) && !"Partially Received".equals(poOpt.get().getStatus())) ) {
             redirectAttributes.addFlashAttribute("errorMessage", "PO ไม่ถูกต้อง หรือสถานะมีการเปลี่ยนแปลง");
@@ -96,11 +98,12 @@ public class StockController {
         int itemsSuccessfullyProcessed = 0;
         int totalItemsInPo = itemsInPo.size();
         boolean somethingWasReceived = false; // <<< เพิ่ม Flag เช็คว่ามีการรับของบ้างไหม
+        boolean allReceivedCompletely = true; // <<< Flag เช็คว่ารับครบทุกจำนวนที่สั่งหรือไม่
 
         // วนลูป PO Items ที่มีอยู่ใน PO จริงๆ
         for (PurchaseOrderItem item : itemsInPo) {
             Integer poItemId = item.getPoItemID();
-            String variantId = item.getProductVariant().getVariantID();
+            String variantId = item.getProductVariant().getVariantID(); //
             logger.debug("Processing PO Item ID: {}, Variant ID: {}", poItemId, variantId);
 
             String qtyReceivedStr = request.getParameter("qty_" + poItemId);
@@ -118,6 +121,7 @@ public class StockController {
             } catch (NumberFormatException e) {
                 String errorMsg = "จำนวนที่รับสำหรับ Item ID " + poItemId + " ไม่ถูกต้อง";
                 logger.warn(errorMsg); errors.add(errorMsg);
+                allReceivedCompletely = false; // <<< ถือว่ารับไม่ครบถ้า Error
                 continue; // ข้ามไป Item ถัดไป
             }
 
@@ -126,22 +130,22 @@ public class StockController {
                  logger.info("Processing QC for Item ID: {}, Qty: {}, Status: {}", poItemId, quantityReceived, qcStatus);
                  somethingWasReceived = true; // <<< ตั้ง Flag ว่ามีการรับของ
 
-                // (Optional) ตรวจสอบว่าเคย QC รายการนี้ไปหรือยัง
-                // ... (Logic ตรวจสอบซ้ำ) ...
+                // (Optional) ตรวจสอบว่าเคย QC รายการนี้ไปหรือยัง (อาจจะซับซ้อนถ้ารองรับการรับหลายครั้ง)
+                // ...
 
                 // 1. บันทึกผล QC
                 QualityCheck qc = new QualityCheck();
-                qc.setPurchaseOrderItem(item);
+                qc.setPurchaseOrderItem(item); //
                 qc.setStatus(qcStatus);
                 qc.setNotes(qcNotes);
                 try {
-                    qualityCheckRepository.save(qc);
+                    qualityCheckRepository.save(qc); //
                     logger.info("QC record saved for Item ID: {}", poItemId);
 
                     // 2. เพิ่มสต็อก ถ้า QC ผ่าน (Pass หรือ B-Grade)
                     if ("Pass".equals(qcStatus) || "B-Grade".equals(qcStatus)) {
                         logger.info("Adding stock for Variant ID: {}, Qty: {}", variantId, quantityReceived);
-                        inventoryService.addStockOnHand(variantId, quantityReceived);
+                        inventoryService.addStockOnHand(variantId, quantityReceived); //
                         successMessages.add("เพิ่มสต็อก " + item.getProductVariant().getSkuCode() + " จำนวน " + quantityReceived);
                     } else if ("Fail".equals(qcStatus)) {
                          logger.warn("QC Failed for Item ID: {}", poItemId);
@@ -152,21 +156,29 @@ public class StockController {
                 } catch (Exception e) {
                      String errorMsg = "เกิดข้อผิดพลาดในการบันทึก QC/สต็อกสำหรับ Item ID " + poItemId + ": " + e.getMessage();
                      logger.error(errorMsg, e); errors.add(errorMsg);
+                     allReceivedCompletely = false; // <<< ถือว่ารับไม่ครบถ้า Error
                 }
 
             } else if (quantityReceived == 0 && (qcStatus == null || qcStatus.isBlank())) {
                 // กรณีไม่กรอกอะไรเลย (Qty=0, Status=ว่าง) ถือว่า "ยังไม่รับ" Item นี้
                  logger.debug("Skipping Item ID: {} (Qty 0 or No Status)", poItemId);
-                 itemsSuccessfullyProcessed++; // ถือว่าข้ามได้สำเร็จ (ไม่มี Error)
+                 itemsSuccessfullyProcessed++;
+                 allReceivedCompletely = false; // <<< ถือว่ายังรับไม่ครบ
             } else if (quantityReceived > 0 && (qcStatus == null || qcStatus.isBlank())) {
-                // กรอกจำนวน แต่ไม่เลือกผล QC
+                 // กรอกจำนวน แต่ไม่เลือกผล QC
                  String errorMsg = "ข้อมูลไม่ครบถ้วนสำหรับ Item ID " + poItemId + " (กรุณาเลือกผล QC)";
                  logger.warn(errorMsg); errors.add(errorMsg);
+                 allReceivedCompletely = false; // <<< ถือว่ารับไม่ครบถ้า Error
             } else if (quantityReceived == 0 && qcStatus != null && !qcStatus.isBlank()) {
                  // เลือกผล QC แต่ไม่กรอกจำนวน
                  String errorMsg = "ข้อมูลไม่ครบถ้วนสำหรับ Item ID " + poItemId + " (กรุณากรอกจำนวนที่รับ)";
                  logger.warn(errorMsg); errors.add(errorMsg);
+                 allReceivedCompletely = false; // <<< ถือว่ารับไม่ครบถ้า Error
             }
+            
+            // (TODO: Logic ตรวจสอบ allReceivedCompletely ต้องซับซ้อนกว่านี้
+            // โดยการนับจำนวนที่รับแล้ว (จาก QC records) เทียบกับจำนวนที่สั่ง (item.getQuantity())
+            // ตอนนี้แค่เช็คว่ากรอกครบทุกช่องใน "รอบนี้" หรือไม่)
 
         } // จบ Loop for
 
@@ -174,13 +186,12 @@ public class StockController {
         if (!errors.isEmpty()) {
             redirectAttributes.addFlashAttribute("errorMessage", "เกิดข้อผิดพลาดบางรายการ: " + String.join("; ", errors));
              logger.error("Intake process completed with errors for PO ID: {}", poId);
-        } else if (itemsSuccessfullyProcessed == totalItemsInPo && somethingWasReceived) { // <<< เช็คว่า xử lý ครบ และ มีการรับของ
+        } else if (itemsSuccessfullyProcessed == totalItemsInPo && somethingWasReceived) {
              // (Logic คำนวณสถานะใหม่)
-             // ... (ควรเช็คว่ารับครบทุกจำนวนที่สั่งหรือยัง เทียบกับ QC records เก่า) ...
-             // (สมมติว่าถ้าไม่มี Error และรับของแล้ว ให้เป็น Received ไปก่อน)
-            String finalPoStatus = "Received"; // <<< TODO: ควรเปลี่ยนเป็น "Partially Received" ถ้ายังรับไม่ครบ
+             // (สมมติว่าถ้าไม่มี Error และรับของแล้ว -> ถือว่า Received)
+            String finalPoStatus = allReceivedCompletely ? "Received" : "Partially Received"; // <<< ใช้ Flag ที่คำนวณ (ชั่วคราว)
             try {
-                 purchaseOrderService.updatePurchaseOrderStatus(poId, finalPoStatus);
+                 purchaseOrderService.updatePurchaseOrderStatus(poId, finalPoStatus); //
                  redirectAttributes.addFlashAttribute("successMessage", "บันทึกการรับสินค้าสำหรับ PO '" + poId + "' สำเร็จ! สถานะ: " + finalPoStatus);
                  if (!successMessages.isEmpty()) {
                       redirectAttributes.addFlashAttribute("infoMessage", String.join("; ", successMessages));
@@ -191,8 +202,8 @@ public class StockController {
                   logger.error(errorMsg, e);
                   redirectAttributes.addFlashAttribute("errorMessage", errorMsg);
             }
-        } else if (!somethingWasReceived) { // <<< ถ้ากด submit มา แต่ไม่กรอกอะไรเลย
-             redirectAttributes.addFlashAttribute("infoMessage", "ยังไม่มีการรับสินค้าสำหรับ PO '" + poId + "'");
+        } else if (!somethingWasReceived) {
+             redirectAttributes.addFlashAttribute("infoMessage", "ยังไม่มีการรับสินค้าสำหรับ PO '" + poId + "' (ไม่ได้กรอกจำนวนรับ)");
              logger.info("Intake process submitted with no items received for PO ID: {}", poId);
         } else {
              redirectAttributes.addFlashAttribute("errorMessage", "ไม่สามารถประมวลผลการรับสินค้าได้ครบทุกรายการ");
@@ -201,5 +212,4 @@ public class StockController {
 
         return "redirect:/purchase-orders";
     }
-
 }
