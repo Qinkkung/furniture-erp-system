@@ -1,68 +1,74 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout-main(
+        pageTitle='รายการใบสั่งซื้อ (PO)',
+        pageContent=~{ :: #po-list-content }
+      )}">
 <head>
-    <meta charset="UTF-8">
-    <title>รายการใบสั่งซื้อ (PO)</title>
-    <style>
-        body { font-family: sans-serif; margin: 20px; }
-        /* *** เพิ่ม Style สำหรับ Error และ Info *** */
-        .error { color: red; border: 1px solid red; padding: 10px; margin-bottom: 15px; border-radius: 4px; }
-        .success { color: green; border: 1px solid green; padding: 10px; margin-bottom: 15px; border-radius: 4px; }
-        .info { color: blue; border: 1px solid blue; padding: 10px; margin-bottom: 15px; border-radius: 4px; }
-        table { border-collapse: collapse; margin-top: 15px; width: 100%;}
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
-        a { text-decoration: none; color: #007bff; }
-        a:hover { text-decoration: underline; }
-        button { background-color: #17a2b8; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; }
-        button:hover { background-color: #138496; }
-        .action-links a, .action-links form { margin-right: 5px; display: inline-block;}
-        .button-receive { background-color: #ffc107; color: black; padding: 5px 10px; font-size: 0.9em;} /* Warning color */
-        .button-receive:hover { background-color: #e0a800; }
-    </style>
-</head>
+    </head>
 <body>
-    <h1>รายการใบสั่งซื้อ (Purchase Orders)</h1>
 
-    <div th:if="${errorMessage}" class="error" th:text="${errorMessage}"></div>
-    <div th:if="${successMessage}" class="success" th:text="${successMessage}"></div>
-    <div th:if="${infoMessage}" class="info" th:text="${infoMessage}"></div>
-    <p>
-        <a th:href="@{/purchase-orders/new}">
-            <button type="button">+ สร้าง PO ใหม่</button>
-        </a>
-    </p>
+    <main id="po-list-content">
 
-    <div th:if="${poList == null || poList.isEmpty()}">
-        <p>ยังไม่มีใบสั่งซื้อในระบบ</p>
-    </div>
+        <style>
+            .error { color: red; border: 1px solid red; padding: 10px; margin-bottom: 15px; border-radius: 4px; }
+            .success { color: green; border: 1px solid green; padding: 10px; margin-bottom: 15px; border-radius: 4px; }
+            .info { color: blue; border: 1px solid blue; padding: 10px; margin-bottom: 15px; border-radius: 4px; }
+            table { border-collapse: collapse; margin-top: 15px; width: 100%;}
+            th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; }
+            a { text-decoration: none; color: #007bff; }
+            a:hover { text-decoration: underline; }
+            button { background-color: #17a2b8; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; }
+            button:hover { background-color: #138496; }
+            .action-links a, .action-links form { margin-right: 5px; display: inline-block;}
+            .button-receive { background-color: #ffc107; color: black; padding: 5px 10px; font-size: 0.9em;} /* Warning color */
+            .button-receive:hover { background-color: #e0a800; }
+        </style>
 
-    <table th:unless="${poList == null || poList.isEmpty()}">
-        <thead>
-            <tr>
-                <th>PO ID</th>
-                <th>วันที่สั่ง</th>
-                <th>ซัพพลายเออร์</th>
-                <th>สถานะ</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr th:each="po : ${poList}">
-                <td th:text="${po.poID}">PO-XXXX</td>
-                <td th:text="${po.orderDate != null ? #temporals.format(po.orderDate, 'dd-MM-yyyy') : 'N/A'}">dd-MM-yyyy</td>
-                <td th:text="${po.supplier?.name ?: 'N/A'}">ชื่อซัพพลายเออร์</td>
-                <td th:text="${po.status}">สถานะ</td>
-                <td class="action-links">
-                    <a th:href="@{/purchase-orders/view/{id}(id=${po.poID})}">ดู</a>
-                    <a th:href="@{/stock/receive/{poId}(poId=${po.poID})}"
-                       th:if="${po.status == 'Ordered' or po.status == 'Partially Received'}">
-                       <button type="button" class="button-receive">รับสินค้า</button>
-                    </a>
-                </td>
-            </tr>
-        </tbody>
-    </table>
+        <h1>รายการใบสั่งซื้อ (Purchase Orders)</h1>
+
+        <div th:if="${errorMessage}" class="error" th:text="${errorMessage}"></div>
+        <div th:if="${successMessage}" class="success" th:text="${successMessage}"></div>
+        <div th:if="${infoMessage}" class="info" th:text="${infoMessage}"></div>
+        <p>
+            <a th:href="@{/purchase-orders/new}">
+                <button type="button">+ สร้าง PO ใหม่</button>
+            </a>
+        </p>
+
+        <div th:if="${poList == null || poList.isEmpty()}">
+            <p>ยังไม่มีใบสั่งซื้อในระบบ</p>
+        </div>
+
+        <table th:unless="${poList == null || poList.isEmpty()}">
+            <thead>
+                <tr>
+                    <th>PO ID</th>
+                    <th>วันที่สั่ง</th>
+                    <th>ซัพพลายเออร์</th>
+                    <th>สถานะ</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="po : ${poList}">
+                    <td th:text="${po.poID}">PO-XXXX</td>
+                    <td th:text="${po.orderDate != null ? #temporals.format(po.orderDate, 'dd-MM-yyyy') : 'N/A'}">dd-MM-yyyy</td>
+                    <td th:text="${po.supplier?.name ?: 'N/A'}">ชื่อซัพพลายเออร์</td>
+                    <td th:text="${po.status}">สถานะ</td>
+                    <td class="action-links">
+                        <a th:href="@{/purchase-orders/view/{id}(id=${po.poID})}">ดู</a>
+                        <a th:href="@{/stock/receive/{poId}(poId=${po.poID})}"
+                           th:if="${po.status == 'Ordered' or po.status == 'Partially Received'}">
+                           <button type="button" class="button-receive">รับสินค้า</button>
+                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+    </main>
 
 </body>
 </html>

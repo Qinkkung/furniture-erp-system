@@ -2,8 +2,8 @@ package com.furnitureshop.furniture_erp_system.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-
 import com.furnitureshop.furniture_erp_system.model.User;
+import java.util.Optional; // <<< Import ที่เพิ่มเข้ามา
 
 /**
  * Repository Interface สำหรับ Product Entity
@@ -13,7 +13,10 @@ import com.furnitureshop.furniture_erp_system.model.User;
  */
 @Repository // บอก Spring Boot ว่านี่คือ Repository
 public interface UserRepository extends JpaRepository<User, String> {
-    // --- ไม่ต้องเขียนอะไรเพิ่มเลย! ---
-    // JpaRepository มีคำสั่งพื้นฐาน (save, findById, findAll, delete) ให้เราแล้ว
-    // ถ้าต้องการคำสั่งค้นหาพิเศษ ค่อยมาเพิ่มทีหลัง
+    
+    // === เพิ่ม Method นี้ ===
+    // Spring Data JPA จะสร้าง Query ให้เราอัตโนมัติ
+    // เพื่อค้นหา User จาก field ที่ชื่อ "username"
+    Optional<User> findByUsername(String username);
+
 }

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:fragment="layout-main(pageTitle, pageContent)"> 
+<head>
+    <meta charset="UTF-8">
+    
+    <title th:text="${pageTitle} + ' - Furniture ERP'"></title>
+
+    <style>
+        body { 
+            font-family: sans-serif; 
+            margin: 0; 
+            display: flex; 
+            min-height: 100vh;
+        }
+        .sidebar {
+            width: 250px; 
+            border-right: 1px solid #ccc; 
+            flex-shrink: 0; 
+            padding: 10px;
+        }
+        .main-content {
+            flex-grow: 1; 
+            padding: 10px 20px;
+        }
+        .header-bar {
+            text-align: right; 
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="sidebar">
+        <h3>Furniture ERP</h3>
+        
+        <ul sec:authorize="isAuthenticated()">
+            <li><a th:href="@{/}">Dashboard</a></li>
+        </ul>
+        
+        <ul sec:authorize="hasRole('Sales')">
+            <li><a th:href="@{/sales-orders}">จัดการฝ่ายขาย (SO)</a></li>
+        </ul>
+        
+        <ul sec:authorize="hasRole('Stock')">
+            <li><a th:href="@{/purchase-orders}">จัดการฝ่ายซื้อ (PO)</a></li>
+            <li><a th:href="@{/stock/receive/PO-002}"> (Test) รับสินค้า PO-002</a></li> 
+        </ul>
+        
+        <ul sec:authorize="hasRole('Delivery')">
+            <li><a th:href="@{/shipments}">จัดการจัดส่ง</a></li>
+        </ul>
+        
+        <ul sec:authorize="hasRole('Admin')">
+            <li><a th:href="@{/products}">จัดการสินค้า (Admin)</a></li>
+        </ul>
+    </nav>
+
+    <div class="main-content">
+        
+        <header class="header-bar">
+            <span>
+                User: <strong sec:authentication="name">Username</strong>
+                (Role: <span sec:authentication="principal.authorities">[ROLE]</span>)
+            </span>
+            
+            <form th:action="@{/logout}" method="post" style="display: inline; margin-left: 20px;">
+                <button type="submit">ออกจากระบบ</button>
+            </form>
+        </header>
+        
+        <main>
+            <th:block th:replace="${pageContent}"></th:block>
+        </main>
+        
+    </div>
+
+</body>
+</html>

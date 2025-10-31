@@ -1,35 +1,51 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout-main(
+        pageTitle=${product.productID == null ? 'เพิ่มสินค้าใหม่' : 'แก้ไขสินค้า'},
+        pageContent=~{ :: #product-form-content }
+      )}">
 <head>
-    <meta charset="UTF-8">
-    <title th:text="${product.productID == null ? 'เพิ่มสินค้าใหม่' : 'แก้ไขสินค้า'}"></title>
-</head>
+    </head>
 <body>
-    <h1 th:text="${product.productID == null ? 'เพิ่มสินค้าใหม่' : 'แก้ไขสินค้า'}"></h1>
 
-    <form th:action="${product.productID == null ? '/products/save' : '/products/update/' + product.productID}"
-          th:object="${product}" method="post">
+    <main id="product-form-content">
+        
+        <style>
+            label { display: block; margin-top: 10px; font-weight: bold; }
+            input[type=text], textarea { width: 300px; padding: 8px; margin-bottom: 5px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+            button { background-color: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; }
+            button:hover { background-color: #0056b3; }
+            a { text-decoration: none; }
+            a button { background-color: #6c757d; margin-left: 10px;}
+        </style>
 
-        <input type="hidden" th:field="*{productID}" th:if="${product.productID != null}" />
+        <h1 th:text="${product.productID == null ? 'เพิ่มสินค้าใหม่' : 'แก้ไขสินค้า'}"></h1>
 
-        <div>
-            <label for="productID_display">รหัสสินค้า (ID):</label><br>
-            <input type="text" id="productID_display" th:field="*{productID}" required
-                   th:readonly="${product.productID != null}">
-        </div>
-        <div>
-            <label for="name">ชื่อสินค้า:</label><br>
-            <input type="text" id="name" th:field="*{name}" required>
-        </div>
-        <div>
-            <label for="description">รายละเอียด:</label><br>
-            <textarea id="description" th:field="*{description}" rows="4" cols="50"></textarea>
-        </div>
-        <div>
-            <button type="submit" th:text="${product.productID == null ? 'บันทึกสินค้า' : 'อัปเดตสินค้า'}"></button>
-            <a th:href="@{/products}">ยกเลิก</a>
-        </div>
-    </form>
+        <form th:action="${product.productID == null ? '/products/save' : '/products/update/' + product.productID}"
+              th:object="${product}" method="post">
+
+            <input type="hidden" th:field="*{productID}" th:if="${product.productID != null}" />
+
+            <div>
+                <label for="productID_display">รหัสสินค้า (ID):</label>
+                <input type="text" id="productID_display" th:field="*{productID}" required
+                       th:readonly="${product.productID != null}">
+            </div>
+            <div>
+                <label for="name">ชื่อสินค้า:</label>
+                <input type="text" id="name" th:field="*{name}" required>
+            </div>
+            <div>
+                <label for="description">รายละเอียด:</label>
+                <textarea id="description" th:field="*{description}" rows="4"></textarea>
+            </div>
+            <div>
+                <button type="submit" th:text="${product.productID == null ? 'บันทึกสินค้า' : 'อัปเดตสินค้า'}"></button>
+                <a th:href="@{/products}"><button type="button">ยกเลิก</button></a>
+            </div>
+        </form>
+
+    </main>
 
 </body>
 </html>

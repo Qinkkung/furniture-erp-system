@@ -19,6 +19,14 @@ import java.util.Collections; // <<< Import Collections
 import java.util.List;
 import java.util.Optional; // <<< Import Optional
 import java.util.Set; // <<< Import Set
+import java.util.stream.Collectors; // <<< Import Collectors
+
+// --- Imports ที่เพิ่มเข้ามาสำหรับแก้ไข ---
+import com.furnitureshop.furniture_erp_system.dto.ProductVariantDropdownDto; 
+import org.hibernate.Hibernate; 
+import org.springframework.transaction.annotation.Transactional; 
+// --- จบ Imports ที่เพิ่มเข้ามา ---
+
 
 /**
  * Controller สำหรับจัดการคำขอที่เกี่ยวกับ Product
@@ -92,22 +100,33 @@ public class ProductController {
 
     /**
      * API Endpoint สำหรับดึง Variants ของ Product ที่กำหนด (สำหรับ JavaScript เรียกใช้)
+     * (*** นี่คือ Method ที่แก้ไขใหม่ทั้งหมด ***)
      * @param productId รหัส Product ที่ส่งมาจาก JavaScript
-     * @return Set ของ ProductVariant ในรูปแบบ JSON
+     * @return Set ของ ProductVariantDropdownDto ในรูปแบบ JSON
      */
     @GetMapping("/variants/{productId}") // URL เช่น /products/variants/P-001
-    @ResponseBody // <<< บอก Spring ว่าให้ส่งข้อมูลกลับเป็น JSON ไม่ใช่ชื่อ HTML
-    public ResponseEntity<Set<ProductVariant>> getVariantsByProductId(@PathVariable String productId) {
+    @ResponseBody // <<< บอก Spring ว่าให้ส่งข้อมูลกลับเป็น JSON
+    @Transactional(readOnly = true) // <<< (1) เพิ่ม Transactional
+    public ResponseEntity<Set<ProductVariantDropdownDto>> getVariantsByProductId(@PathVariable String productId) {
         Optional<Product> productOpt = productService.getProductById(productId);
 
         if (productOpt.isPresent()) {
-            // ดึง Set<ProductVariant> ออกมา (ต้องแน่ใจว่าโหลดมาแล้ว หรือ FetchType ไม่ใช่ LAZY ถ้าจะใช้ทันที)
-            // หรืออาจจะต้องเขียน query เพิ่มใน Service/Repository เพื่อดึงเฉพาะ Variant
-             Set<ProductVariant> variants = productOpt.get().getVariants();
-             // *** สำคัญ: เพื่อป้องกัน Loop ตอนแปลงเป็น JSON อาจจะต้อง Clear relationship ฝั่งกลับ (product ใน variant) ***
-             // variants.forEach(v -> v.setProduct(null)); // << อาจจะต้องทำแบบนี้ หรือใช้ DTO แทน
+            Product product = productOpt.get();
+            // (2) บังคับโหลด (Initialize) collection ที่เป็น LAZY
+            Hibernate.initialize(product.getVariants()); 
+            
+            // (3) แปลง Entity (ProductVariant) เป็น DTO (ProductVariantDropdownDto)
+            Set<ProductVariantDropdownDto> variantsDto = product.getVariants().stream()
+                .map(variant -> new ProductVariantDropdownDto(
+                    variant.getVariantID(),   // <<< (4) นี่คือตัวที่ขาดไป
+                    variant.getSkuCode(),
+                    product.getName(),      // <<< (5) เอาชื่อจาก Product แม่
+                    variant.getAttributes(),
+                    variant.getUnitPrice()
+                ))
+                .collect(Collectors.toSet());
 
-            return ResponseEntity.ok(variants); // ส่งข้อมูล Variants กลับไป (HTTP Status 200 OK)
+            return ResponseEntity.ok(variantsDto); // ส่ง DTO กลับไป
         } else {
             return ResponseEntity.ok(Collections.emptySet()); // ส่ง Set ว่างกลับไป
         }

@@ -1,53 +1,59 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout-main(
+        pageTitle='Dashboard',
+        pageContent=~{ :: #dashboard-content-wrapper }
+      )}">
 <head>
-    <meta charset="UTF-8">
-    <title>Furniture ERP Dashboard</title>
-    <style>
-        body { font-family: sans-serif; margin: 20px; background-color: #f4f7f6; }
-        h1 { border-bottom: 2px solid #ddd; padding-bottom: 10px; }
-        .widget-container { display: flex; flex-wrap: wrap; gap: 20px; }
-        .widget { background-color: white; border: 1px solid #ddd; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .widget-small { flex-basis: 200px; text-align: center; }
-        .widget-large { flex-basis: 400px; }
-        .widget-small .count { font-size: 3em; font-weight: bold; color: #007bff; }
-        .widget-small .title { font-size: 1.1em; color: #555; }
-        .widget-large h3 { margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 5px;}
-        .low-stock-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #f0f0f0; }
-        .low-stock-item:last-child { border-bottom: none; }
-        .low-stock-item .sku { font-weight: bold; }
-        .low-stock-item .ats { color: red; font-weight: bold; }
-    </style>
-</head>
+    </head>
 <body>
-    <h1>Furniture ERP Dashboard</h1>
-    
-    <div class="widget-container">
-    
-        <div class="widget widget-small">
-            <div class="count" th:text="${awaitingShipmentCount}">0</div>
-            <div class="title">SO รอจัดส่ง</div>
-        </div>
 
-        <div class="widget widget-small">
-            <div class="count" th:text="${pendingPoCount}">0</div>
-            <div class="title">PO รอรับสินค้า</div>
-        </div>
+    <main id="dashboard-content-wrapper">
+
+        <h1>Furniture ERP Dashboard</h1>
+    
+        <style>
+            .widget-container { display: flex; flex-wrap: wrap; gap: 20px; }
+            .widget { background-color: white; border: 1px solid #ddd; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+            .widget-small { flex-basis: 200px; text-align: center; }
+            .widget-large { flex-basis: 400px; }
+            .widget-small .count { font-size: 3em; font-weight: bold; color: #007bff; }
+            .widget-small .title { font-size: 1.1em; color: #555; }
+            .widget-large h3 { margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 5px;}
+            .low-stock-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #f0f0f0; }
+            .low-stock-item:last-child { border-bottom: none; }
+            .low-stock-item .sku { font-weight: bold; }
+            .low-stock-item .ats { color: red; font-weight: bold; }
+        </style>
+
+        <div class="widget-container">
         
-        <div class="widget widget-large">
-            <h3>สินค้าใกล้หมด (ATS < 10 ชิ้น)</h3>
-            <div th:if="${lowStockItems == null or #lists.isEmpty(lowStockItems)}">
-                <p>ไม่มีสินค้าใกล้หมดในขณะนี้</p>
+            <div class="widget widget-small">
+                <div class="count" th:text="${awaitingShipmentCount}">0</div>
+                <div class="title">SO รอจัดส่ง</div>
             </div>
-            <div th:unless="${lowStockItems == null or #lists.isEmpty(lowStockItems)}">
-                <div th:each="inv : ${lowStockItems}" class="low-stock-item">
-                    <span class="sku" th:text="${inv.productVariant?.skuCode ?: 'N/A'}">SKU-XXX</span>
-                    <span class="ats" th:text="${inv.availableToSell} + ' ชิ้น'">0 ชิ้น</span>
+    
+            <div class="widget widget-small">
+                <div class="count" th:text="${pendingPoCount}">0</div>
+                <div class="title">PO รอรับสินค้า</div>
+            </div>
+            
+            <div class="widget widget-large">
+                <h3>สินค้าใกล้หมด (ATS < 10 ชิ้น)</h3>
+                <div th:if="${lowStockItems == null or #lists.isEmpty(lowStockItems)}">
+                    <p>ไม่มีสินค้าใกล้หมดในขณะนี้</p>
+                </div>
+                <div th:unless="${lowStockItems == null or #lists.isEmpty(lowStockItems)}">
+                    <div th:each="inv : ${lowStockItems}" class="low-stock-item">
+                        <span class="sku" th:text="${inv.productVariant?.skuCode ?: 'N/A'}">SKU-XXX</span>
+                        <span class="ats" th:text="${inv.availableToSell} + ' ชิ้น'">0 ชิ้น</span>
+                    </div>
                 </div>
             </div>
+    
         </div>
-
-    </div>
+        
+    </main>
 
 </body>
 </html>

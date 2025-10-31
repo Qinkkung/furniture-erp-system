@@ -28,6 +28,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors; // Needed if using stream().map() etc.
 
+// --- (Imports ที่ต้องเพิ่ม) ---
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+
 @Controller
 @RequestMapping("/sales-orders") // URL หลักสำหรับ SO
 public class SalesOrderController {
@@ -64,25 +68,30 @@ public class SalesOrderController {
 
     /**
      * จัดการการ submit ฟอร์มสร้าง Sales Order
+     * (*** นี่คือ Method ที่แก้ไขแล้ว ***)
      */
     @PostMapping("/save")
     public String createSalesOrder(
             @RequestParam("customerId") String customerId,
-            @RequestParam(name = "itemsJson", required = false) List<String> itemsJsonList,
+            @RequestParam(name = "itemsJson", required = false) List<String> encodedItemsJsonList, // (1) เปลี่ยนชื่อตัวแปร
             RedirectAttributes redirectAttributes) {
 
         List<SalesOrderItemDto> itemsDtoList = new ArrayList<>();
-        if (itemsJsonList != null && !itemsJsonList.isEmpty()) {
+        if (encodedItemsJsonList != null && !encodedItemsJsonList.isEmpty()) { // (2) ใช้ชื่อตัวแปรใหม่
             ObjectMapper objectMapper = new ObjectMapper();
-            for (String itemJson : itemsJsonList) {
+            for (String encodedItemJson : encodedItemsJsonList) { // (3) ใช้ชื่อตัวแปรใหม่
                 try {
-                    SalesOrderItemDto dto = objectMapper.readValue(itemJson, SalesOrderItemDto.class);
+                    // (4) เพิ่มบรรทัดนี้เพื่อ "ถอดรหัส"
+                    String itemJson = URLDecoder.decode(encodedItemJson, StandardCharsets.UTF_8.toString());
+
+                    SalesOrderItemDto dto = objectMapper.readValue(itemJson, SalesOrderItemDto.class); // (5) ใช้ itemJson ที่ถอดรหัสแล้ว
+                    
                     if (dto.getVariantId() == null || dto.getVariantId().isEmpty() || dto.getQuantity() <= 0) {
                         throw new IllegalArgumentException("ข้อมูล Variant ID หรือ Quantity ไม่ถูกต้อง");
                     }
                     itemsDtoList.add(dto);
                 } catch (Exception e) {
-                    redirectAttributes.addFlashAttribute("errorMessage", "ข้อมูลรายการสินค้าไม่ถูกต้อง: " + e.getMessage());
+                    redirectAttributes.addFlashAttribute("errorMessage", "ข้อมูลรายการสินค้าไม่ถูกต้อง (Decode/Parse Error): " + e.getMessage());
                     return "redirect:/sales-orders/new";
                 }
             }
@@ -171,27 +180,35 @@ public class SalesOrderController {
      */
     @GetMapping("/view/{id}")
     public String viewSalesOrder(@PathVariable("id") String id, Model model, RedirectAttributes redirectAttributes) {
-        // *** ใช้ Method ใหม่ที่ Join Fetch ข้อมูลมาครบ ***
+        
+        // 1. ดึง SO (อันนี้ยังดีอยู่)
         Optional<SalesOrder> orderOpt = salesOrderRepository.findByIdWithDetails(id);
 
         if (orderOpt.isPresent()) {
             SalesOrder order = orderOpt.get();
 
-            // *** คำนวณ totalPaid ตรงนี้เลย ***
+            // === (*** START FIX ***) ===
+            // 
+            // เปลี่ยนจากการใช้ order.getPayments() (ที่ข้อมูลอาจจะเก่า)
+            // มาเป็นการ query ตรงๆ จาก PaymentRepository เพื่อเอาข้อมูลล่าสุด
+            //
+            List<Payment> existingPayments = paymentRepository.findBySalesOrder_OrderID(id);
+            
             BigDecimal totalPaid = BigDecimal.ZERO; // เริ่มต้นเป็น 0
-            // ตรวจสอบ null ก่อนเข้าถึง payments
-            if (order.getPayments() != null) {
-                totalPaid = order.getPayments().stream()
+            if (existingPayments != null) { // ใช้ "existingPayments"
+                totalPaid = existingPayments.stream()
                                .map(Payment::getAmount) // ดึง BigDecimal Amount
                                .filter(java.util.Objects::nonNull) // กรองค่า null
                                .reduce(BigDecimal.ZERO, BigDecimal::add); // รวมยอด
             }
+            // === (*** END FIX ***) ===
 
-            // ส่งข้อมูล SO และ totalPaid ไปให้ View
+
+            // 2. ส่งข้อมูล SO และ totalPaid ที่คำนวณใหม่ ไปให้ View
             model.addAttribute("order", order);
-            model.addAttribute("totalPaidForView", totalPaid); // <<< ส่ง totalPaid ไปในชื่อใหม่
+            model.addAttribute("totalPaidForView", totalPaid); // <<< ส่ง totalPaid ที่ถูกต้องไป
 
-            return "sales-order-view"; // <<< ไฟล์ HTML ที่เราจะแก้ไข Thymeleaf
+            return "sales-order-view"; 
         } else {
             redirectAttributes.addFlashAttribute("errorMessage", "ไม่พบ Sales Order ID: " + id);
             return "redirect:/sales-orders";

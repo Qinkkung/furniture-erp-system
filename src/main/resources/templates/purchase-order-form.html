@@ -1,204 +1,212 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout-main(
+        pageTitle='สร้างใบสั่งซื้อ (PO)',
+        pageContent=~{ :: #po-form-content }
+      )}">
 <head>
-    <meta charset="UTF-8">
-    <title>สร้างใบสั่งซื้อ (PO) ใหม่</title>
-    <style>
-        body { font-family: sans-serif; margin: 20px; }
-        .error { color: red; border: 1px solid red; padding: 10px; margin-bottom: 15px; }
-        .success { color: green; border: 1px solid green; padding: 10px; margin-bottom: 15px; }
-        label { display: block; margin-top: 10px; font-weight: bold; }
-        input[type=text], input[type=number], select { width: 300px; padding: 8px; margin-bottom: 5px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        input[type=number].cost { width: 150px; }
-        table { border-collapse: collapse; margin-top: 15px; width: 100%;}
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
-        button { padding: 10px 15px; margin-top: 10px; cursor: pointer; border: none; border-radius: 4px; color: white;}
-        #addItemButton { background-color: #007bff; }
-        #submitButton { background-color: #28a745; }
-        a button { background-color: #6c757d; }
-        .remove-item { background-color: #f44336; padding: 3px 8px; font-size: 0.8em; margin: 0; }
-        .remove-item:hover { background-color: #da190b; }
-        hr { margin: 20px 0; border: 0; border-top: 1px solid #eee;}
-        .item-adder { border: 1px solid #eee; padding: 15px; margin-bottom: 15px; background-color: #f9f9f9; border-radius: 5px; }
-        #summary { margin-top: 20px; text-align: right; width: 400px; float: right; border-top: 1px solid #ccc; padding-top: 10px;}
-    </style>
-</head>
+    </head>
 <body>
-    <h1>สร้างใบสั่งซื้อ (Purchase Order) ใหม่</h1>
 
-    <div th:if="${errorMessage}" class="error" th:text="${errorMessage}"></div>
-    <div th:if="${successMessage}" class="success" th:text="${successMessage}"></div>
+    <main id="po-form-content">
+        
+        <style>
+            .error { color: red; border: 1px solid red; padding: 10px; margin-bottom: 15px; }
+            .success { color: green; border: 1px solid green; padding: 10px; margin-bottom: 15px; }
+            label { display: block; margin-top: 10px; font-weight: bold; }
+            input[type=text], input[type=number], select { width: 300px; padding: 8px; margin-bottom: 5px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+            input[type=number].cost { width: 150px; }
+            table { border-collapse: collapse; margin-top: 15px; width: 100%;}
+            th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; }
+            button { padding: 10px 15px; margin-top: 10px; cursor: pointer; border: none; border-radius: 4px; color: white;}
+            #addItemButton { background-color: #007bff; }
+            #submitButton { background-color: #28a745; }
+            /* แก้ไขปุ่มยกเลิก ให้ style เหมือน button */
+            a button { background-color: #6c757d; } 
+            .remove-item { background-color: #f44336; padding: 3px 8px; font-size: 0.8em; margin: 0; }
+            .remove-item:hover { background-color: #da190b; }
+            hr { margin: 20px 0; border: 0; border-top: 1px solid #eee;}
+            .item-adder { border: 1px solid #eee; padding: 15px; margin-bottom: 15px; background-color: #f9f9f9; border-radius: 5px; }
+            #summary { margin-top: 20px; text-align: right; width: 400px; float: right; border-top: 1px solid #ccc; padding-top: 10px;}
+        </style>
 
-    <form id="poForm" th:action="@{/purchase-orders/save}" method="post">
+        <h1>สร้างใบสั่งซื้อ (Purchase Order) ใหม่</h1>
 
-        <div>
-            <label for="supplierId">ซัพพลายเออร์:</label>
-            <select id="supplierId" name="supplierId" required> <option value="">-- กรุณาเลือกซัพพลายเออร์ --</option>
-                <option th:each="sup : ${suppliers}" th:value="${sup.supplierID}" th:text="${sup.name}"></option>
-            </select>
-        </div>
-        <hr>
+        <div th:if="${errorMessage}" class="error" th:text="${errorMessage}"></div>
+        <div th:if="${successMessage}" class="success" th:text="${successMessage}"></div>
 
-        <h2>เพิ่มรายการสินค้า</h2>
-        <div class="item-adder">
+        <form id="poForm" th:action="@{/purchase-orders/save}" method="post">
+
             <div>
-                <label for="variantSelect">เลือกสินค้า (SKU):</label>
-                <select id="variantSelect">
-                    <option value="">-- เลือก SKU ที่จะสั่งซื้อ --</option>
-                    </select>
+                <label for="supplierId">ซัพพลายเออร์:</label>
+                <select id="supplierId" name="supplierId" required> <option value="">-- กรุณาเลือกซัพพลายเออร์ --</option>
+                    <option th:each="sup : ${suppliers}" th:value="${sup.supplierID}" th:text="${sup.name}"></option>
+                </select>
             </div>
-            <div>
-                <label for="quantityInput">จำนวน:</label>
-                 <input type="number" id="quantityInput" value="1" min="1">
+            <hr>
+
+            <h2>เพิ่มรายการสินค้า</h2>
+            <div class="item-adder">
+                <div>
+                    <label for="variantSelect">เลือกสินค้า (SKU):</label>
+                    <select id="variantSelect">
+                        <option value="">-- เลือก SKU ที่จะสั่งซื้อ --</option>
+                        </select>
+                </div>
+                <div>
+                    <label for="quantityInput">จำนวน:</label>
+                     <input type="number" id="quantityInput" value="1" min="1">
+                </div>
+                 <div>
+                    <label for="costInput">ต้นทุนต่อหน่วย (Cost):</label>
+                     <input type="number" id="costInput" class="cost" min="0" step="0.01" placeholder="0.00">
+                </div>
+                <button type="button" id="addItemButton">เพิ่มรายการนี้</button>
             </div>
-             <div>
-                <label for="costInput">ต้นทุนต่อหน่วย (Cost):</label>
-                 <input type="number" id="costInput" class="cost" min="0" step="0.01" placeholder="0.00">
-            </div>
-            <button type="button" id="addItemButton">เพิ่มรายการนี้</button>
-        </div>
-        <hr>
+            <hr>
 
-        <h2>รายการสินค้าในใบสั่งซื้อ</h2>
-        <table id="orderItemsTable">
-            <thead> <tr> <th>SKU</th> <th>ชื่อสินค้า</th> <th>จำนวน</th> <th>ต้นทุน/หน่วย</th> <th>ต้นทุนรวม</th> <th>Action</th> </tr> </thead>
-            <tbody> </tbody>
-        </table>
+            <h2>รายการสินค้าในใบสั่งซื้อ</h2>
+            <table id="orderItemsTable">
+                <thead> <tr> <th>SKU</th> <th>ชื่อสินค้า</th> <th>จำนวน</th> <th>ต้นทุน/หน่วย</th> <th>ต้นทุนรวม</th> <th>Action</th> </tr> </thead>
+                <tbody> </tbody>
+            </table>
 
-         <div id="summary"> <h3>ยอดรวมต้นทุน: <span id="totalCostValue">0.00</span></h3> </div>
-        <div style="clear: both;"></div>
+             <div id="summary"> <h3>ยอดรวมต้นทุน: <span id="totalCostValue">0.00</span></h3> </div>
+            <div style="clear: both;"></div>
 
-        <button type="submit" id="submitButton">บันทึก PO</button>
-        <a th:href="@{/purchase-orders}"><button type="button">ยกเลิก</button></a>
-    </form>
+            <button type="submit" id="submitButton">บันทึก PO</button>
+            <a th:href="@{/purchase-orders}"><button type="button">ยกเลิก</button></a>
+        </form>
 
-    <script th:inline="javascript">
-        /* Store variants DTO data passed from controller */
-        const variantsDtoFromServer = /*[[${variantsDto}]]*/ null;
-        const allVariantsData = {};
-        if (variantsDtoFromServer && Array.isArray(variantsDtoFromServer)) {
-            variantsDtoFromServer.forEach(dto => { if(dto && dto.variantID) allVariantsData[dto.variantID] = dto; });
-        }
-        console.log('Initial Variants DTO Data Loaded:', JSON.parse(JSON.stringify(allVariantsData)));
-
-        document.addEventListener('DOMContentLoaded', function() {
-            // Variable declarations
-            const variantSelect = document.getElementById('variantSelect');
-            const quantityInput = document.getElementById('quantityInput');
-            const costInput = document.getElementById('costInput');
-            const addItemButton = document.getElementById('addItemButton');
-            const orderItemsTableBody = document.querySelector('#orderItemsTable tbody');
-            const totalCostValueSpan = document.getElementById('totalCostValue');
-            const poForm = document.getElementById('poForm');
-
-            // --- Populate Variant Select Options ---
-            function populateVariantOptions() {
-                 console.log('Populating options using data:', allVariantsData);
-                variantSelect.innerHTML = '<option value="">-- เลือก SKU ที่จะสั่งซื้อ --</option>';
-                Object.values(allVariantsData).sort((a,b) => a.skuCode.localeCompare(b.skuCode)).forEach(dto => {
-                    if (!dto) return;
-                    // console.log('Adding option for:', dto.skuCode, 'Product Name:', dto.productName);
-                    const option = document.createElement('option');
-                    option.value = dto.variantID;
-                    let displayText = dto.skuCode;
-                    if (dto.productName && dto.productName !== 'Unknown Product') { displayText += ` - ${dto.productName}`; }
-                    if (dto.attributesJson) { try { const attrs = JSON.parse(dto.attributesJson); displayText += ` (${Object.entries(attrs).map(([k, v]) => `${k}: ${v}`).join(', ')})`; } catch (e) {} }
-                    option.textContent = displayText;
-                    variantSelect.appendChild(option);
-                });
+        <script th:inline="javascript">
+            /* Store variants DTO data passed from controller */
+            const variantsDtoFromServer = /*[[${variantsDto}]]*/ null;
+            const allVariantsData = {};
+            if (variantsDtoFromServer && Array.isArray(variantsDtoFromServer)) {
+                variantsDtoFromServer.forEach(dto => { if(dto && dto.variantID) allVariantsData[dto.variantID] = dto; });
             }
-            populateVariantOptions();
+            console.log('Initial Variants DTO Data Loaded:', JSON.parse(JSON.stringify(allVariantsData)));
 
-            // --- Add Item Button Click Event ---
-            addItemButton.addEventListener('click', function() {
-                // *** เพิ่ม/ปรับปรุง Validations ***
-                const selectedVariantId = variantSelect.value;
-                const quantity = parseInt(quantityInput.value);
-                const costStr = costInput.value;
-                const variantData = allVariantsData[selectedVariantId];
-                if (!variantData) { alert('กรุณาเลือก SKU ก่อน'); variantSelect.focus(); return; }
-                if (isNaN(quantity) || quantity <= 0) { alert('กรุณากรอกจำนวนให้ถูกต้อง'); quantityInput.focus(); return; }
-                if (!costStr || isNaN(parseFloat(costStr)) || parseFloat(costStr) < 0) { alert('กรุณากรอกต้นทุนให้ถูกต้อง (ตัวเลข >= 0)'); costInput.focus(); return; }
-                const cost = parseFloat(costStr);
+            document.addEventListener('DOMContentLoaded', function() {
+                // Variable declarations
+                const variantSelect = document.getElementById('variantSelect');
+                const quantityInput = document.getElementById('quantityInput');
+                const costInput = document.getElementById('costInput');
+                const addItemButton = document.getElementById('addItemButton');
+                const orderItemsTableBody = document.querySelector('#orderItemsTable tbody');
+                const totalCostValueSpan = document.getElementById('totalCostValue');
+                const poForm = document.getElementById('poForm');
 
-                // Prevent adding duplicates
-                const existingRow = orderItemsTableBody.querySelector(`tr[data-variant-id="${selectedVariantId}"]`);
-                if (existingRow) { alert('SKU นี้ถูกเพิ่มในรายการแล้ว'); return; }
-
-                // Add new row
-                const newRow = orderItemsTableBody.insertRow();
-                newRow.setAttribute('data-variant-id', selectedVariantId);
-                const cellSku = newRow.insertCell(); const cellName = newRow.insertCell(); const cellQty = newRow.insertCell(); const cellCost = newRow.insertCell(); const cellTotalCost = newRow.insertCell(); const cellAction = newRow.insertCell();
-
-                // Create hidden input with JSON string (Encode for safety)
-                const itemData = { variantId: variantData.variantID, quantity: quantity, costPerUnit: cost.toFixed(2) };
-                let jsonString = '';
-                try {
-                   jsonString = JSON.stringify(itemData);
-                   // *** Encode the JSON string ***
-                   const encodedJsonString = encodeURIComponent(jsonString);
-                   cellSku.innerHTML = `<input type="hidden" name="itemsJson" value='${encodedJsonString}'>${variantData.skuCode}`;
-                } catch (e) { console.error("Error stringify/encode:", itemData, e); return; }
-
-                // Display name (using DTO)
-                let displayName = variantData.productName || variantData.skuCode;
-                if (variantData.attributesJson) { try { const attrs = JSON.parse(variantData.attributesJson); displayName += ` (${Object.entries(attrs).map(([k, v]) => `${k}: ${v}`).join(', ')})`; } catch (e) {} }
-                cellName.textContent = displayName;
-
-                cellQty.textContent = quantity;
-                cellCost.textContent = cost.toFixed(2);
-                cellTotalCost.textContent = (cost * quantity).toFixed(2);
-                cellAction.innerHTML = `<button type="button" class="remove-item">ลบ</button>`;
-
-                calculateTotalCost();
-                // Reset form
-                variantSelect.value = ""; quantityInput.value = "1"; costInput.value = "";
-            });
-
-            // --- Remove Row Function (Event Delegation) ---
-            orderItemsTableBody.addEventListener('click', function(event) {
-                if (event.target.classList.contains('remove-item')) {
-                    const rowToRemove = event.target.closest('tr');
-                    removeRowAndRecalculate(rowToRemove);
+                // --- Populate Variant Select Options ---
+                function populateVariantOptions() {
+                     console.log('Populating options using data:', allVariantsData);
+                    variantSelect.innerHTML = '<option value="">-- เลือก SKU ที่จะสั่งซื้อ --</option>';
+                    Object.values(allVariantsData).sort((a,b) => a.skuCode.localeCompare(b.skuCode)).forEach(dto => {
+                        if (!dto) return;
+                        // console.log('Adding option for:', dto.skuCode, 'Product Name:', dto.productName);
+                        const option = document.createElement('option');
+                        option.value = dto.variantID;
+                        let displayText = dto.skuCode;
+                        if (dto.productName && dto.productName !== 'Unknown Product') { displayText += ` - ${dto.productName}`; }
+                        if (dto.attributesJson) { try { const attrs = JSON.parse(dto.attributesJson); displayText += ` (${Object.entries(attrs).map(([k, v]) => `${k}: ${v}`).join(', ')})`; } catch (e) {} }
+                        option.textContent = displayText;
+                        variantSelect.appendChild(option);
+                    });
                 }
-            });
-            function removeRowAndRecalculate(row) {
-                if (row) {
-                    row.remove();
+                populateVariantOptions();
+
+                // --- Add Item Button Click Event ---
+                addItemButton.addEventListener('click', function() {
+                    // *** เพิ่ม/ปรับปรุง Validations ***
+                    const selectedVariantId = variantSelect.value;
+                    const quantity = parseInt(quantityInput.value);
+                    const costStr = costInput.value;
+                    const variantData = allVariantsData[selectedVariantId];
+                    if (!variantData) { alert('กรุณาเลือก SKU ก่อน'); variantSelect.focus(); return; }
+                    if (isNaN(quantity) || quantity <= 0) { alert('กรุณากรอกจำนวนให้ถูกต้อง'); quantityInput.focus(); return; }
+                    if (!costStr || isNaN(parseFloat(costStr)) || parseFloat(costStr) < 0) { alert('กรุณากรอกต้นทุนให้ถูกต้อง (ตัวเลข >= 0)'); costInput.focus(); return; }
+                    const cost = parseFloat(costStr);
+
+                    // Prevent adding duplicates
+                    const existingRow = orderItemsTableBody.querySelector(`tr[data-variant-id="${selectedVariantId}"]`);
+                    if (existingRow) { alert('SKU นี้ถูกเพิ่มในรายการแล้ว'); return; }
+
+                    // Add new row
+                    const newRow = orderItemsTableBody.insertRow();
+                    newRow.setAttribute('data-variant-id', selectedVariantId);
+                    const cellSku = newRow.insertCell(); const cellName = newRow.insertCell(); const cellQty = newRow.insertCell(); const cellCost = newRow.insertCell(); const cellTotalCost = newRow.insertCell(); const cellAction = newRow.insertCell();
+
+                    // Create hidden input with JSON string (Encode for safety)
+                    const itemData = { variantId: variantData.variantID, quantity: quantity, costPerUnit: cost.toFixed(2) };
+                    let jsonString = '';
+                    try {
+                       jsonString = JSON.stringify(itemData);
+                       // *** Encode the JSON string ***
+                       const encodedJsonString = encodeURIComponent(jsonString);
+                       cellSku.innerHTML = `<input type="hidden" name="itemsJson" value='${encodedJsonString}'>${variantData.skuCode}`;
+                    } catch (e) { console.error("Error stringify/encode:", itemData, e); return; }
+
+                    // Display name (using DTO)
+                    let displayName = variantData.productName || variantData.skuCode;
+                    if (variantData.attributesJson) { try { const attrs = JSON.parse(variantData.attributesJson); displayName += ` (${Object.entries(attrs).map(([k, v]) => `${k}: ${v}`).join(', ')})`; } catch (e) {} }
+                    cellName.textContent = displayName;
+
+                    cellQty.textContent = quantity;
+                    cellCost.textContent = cost.toFixed(2);
+                    cellTotalCost.textContent = (cost * quantity).toFixed(2);
+                    cellAction.innerHTML = `<button type="button" class="remove-item">ลบ</button>`;
+
                     calculateTotalCost();
-                }
-            }
-
-            // --- Calculate Total Cost Function ---
-            function calculateTotalCost() {
-                let totalCost = 0.00;
-                orderItemsTableBody.querySelectorAll('tr').forEach(row => {
-                    const totalCell = row.cells[4]; // Column: ต้นทุนรวม
-                    if (totalCell) { totalCost += parseFloat(totalCell.textContent) || 0; }
+                    // Reset form
+                    variantSelect.value = ""; quantityInput.value = "1"; costInput.value = "";
                 });
-                totalCostValueSpan.textContent = totalCost.toFixed(2);
-            }
 
-            // --- Form Submit Validation ---
-            poForm.addEventListener('submit', function(event) {
-                const itemCount = orderItemsTableBody.querySelectorAll('tr').length;
-                if (itemCount === 0) {
-                    alert('กรุณาเพิ่มรายการสินค้าอย่างน้อย 1 รายการ ก่อนบันทึก PO');
-                    event.preventDefault(); // Stop form submission
+                // --- Remove Row Function (Event Delegation) ---
+                orderItemsTableBody.addEventListener('click', function(event) {
+                    if (event.target.classList.contains('remove-item')) {
+                        const rowToRemove = event.target.closest('tr');
+                        removeRowAndRecalculate(rowToRemove);
+                    }
+                });
+                function removeRowAndRecalculate(row) {
+                    if (row) {
+                        row.remove();
+                        calculateTotalCost();
+                    }
                 }
-                const supplierId = document.getElementById('supplierId').value;
-                if (!supplierId) {
-                     alert('กรุณาเลือกซัพพลายเออร์');
-                     event.preventDefault();
+
+                // --- Calculate Total Cost Function ---
+                function calculateTotalCost() {
+                    let totalCost = 0.00;
+                    orderItemsTableBody.querySelectorAll('tr').forEach(row => {
+                        const totalCell = row.cells[4]; // Column: ต้นทุนรวม
+                        if (totalCell) { totalCost += parseFloat(totalCell.textContent) || 0; }
+                    });
+                    totalCostValueSpan.textContent = totalCost.toFixed(2);
                 }
-            });
 
-            // Initial calculation
-            calculateTotalCost();
+                // --- Form Submit Validation ---
+                poForm.addEventListener('submit', function(event) {
+                    const itemCount = orderItemsTableBody.querySelectorAll('tr').length;
+                    if (itemCount === 0) {
+                        alert('กรุณาเพิ่มรายการสินค้าอย่างน้อย 1 รายการ ก่อนบันทึก PO');
+                        event.preventDefault(); // Stop form submission
+                    }
+                    const supplierId = document.getElementById('supplierId').value;
+                    if (!supplierId) {
+                         alert('กรุณาเลือกซัพพลายเออร์');
+                         event.preventDefault();
+                    }
+                });
 
-        }); // End DOMContentLoaded
-    </script>
+                // Initial calculation
+                calculateTotalCost();
+
+            }); // End DOMContentLoaded
+        </script>
+
+    </main>
 
 </body>
 </html>

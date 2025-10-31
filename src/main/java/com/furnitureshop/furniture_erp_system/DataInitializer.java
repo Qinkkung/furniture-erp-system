@@ -7,16 +7,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.crypto.password.PasswordEncoder; // <<< Import ที่เพิ่มเข้ามา
 
 import java.math.BigDecimal;
-import java.time.LocalDate; // <<< Import LocalDate
+import java.time.LocalDate; 
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
-import java.util.List; // <<< Import List
+import java.util.List; 
 
 @Component
 public class DataInitializer implements CommandLineRunner {
+
+    // === ฉีด PasswordEncoder เข้ามา ===
+    @Autowired 
+    private PasswordEncoder passwordEncoder;
 
     // --- Autowired Repositories (เพิ่ม PO Repos) ---
     @Autowired private ProductRepository productRepository;
@@ -79,12 +84,12 @@ public class DataInitializer implements CommandLineRunner {
         createCustomerIfNotExists("C-002", "สมหญิง มีสุข", "082-333-4444", "456 แจ้งวัฒนะ นนทบุรี", zone2);
         createCustomerIfNotExists("C-003", "วิชัย มานะ", "083-555-6666", "789 รามอินทรา กทม.", zone3); // เพิ่ม
 
-        // --- 8. สร้าง Users (เหมือนเดิม) ---
-        createUserIfNotExists("U-001", "admin", "password", "Admin");
-        createUserIfNotExists("U-002", "sales01", "password", "Sales");
-        createUserIfNotExists("U-003", "stock01", "password", "Stock");
-        createUserIfNotExists("U-004", "delivery01", "password", "Delivery");
-        createUserIfNotExists("U-005", "sales02", "password", "Sales");
+        // --- 8. สร้าง Users (แก้ไขให้ใช้รหัสผ่าน "pass123") ---
+        createUserIfNotExists("U-001", "admin", "pass123", "Admin");
+        createUserIfNotExists("U-002", "sales01", "pass123", "Sales");
+        createUserIfNotExists("U-003", "stock01", "pass123", "Stock");
+        createUserIfNotExists("U-004", "delivery01", "pass123", "Delivery");
+        createUserIfNotExists("U-005", "sales02", "pass123", "Sales");
 
         // --- 9. สร้าง Suppliers (ถ้ายังไม่มี) ---
         Supplier supplier1 = createSupplierIfNotExists("S-001", "บจก. ไทยเฟอร์นิเจอร์", "02-111-2222");
@@ -114,7 +119,23 @@ public class DataInitializer implements CommandLineRunner {
     private Inventory createInventoryIfNotExists(ProductVariant variant, int onHandQty) { /* ... โค้ดเดิม ... */ return inventoryRepository.findByProductVariant_VariantID(variant.getVariantID()).orElseGet(() -> { Inventory i=new Inventory(); i.setProductVariant(variant); i.setQuantityOnHand(onHandQty); i.setQuantityReserved(0); System.out.println("Creating Inv for: "+variant.getSkuCode()+" ("+onHandQty+")"); return inventoryRepository.save(i); }); }
     private DeliveryZone createZoneIfNotExists(String id, String name, BigDecimal fee) { /* ... โค้ดเดิม ... */ return deliveryZoneRepository.findById(id).orElseGet(() -> { DeliveryZone z=new DeliveryZone(); z.setZoneID(id); z.setZoneName(name); z.setDeliveryFee(fee); System.out.println("Creating Zone: "+name); return deliveryZoneRepository.save(z); }); }
     private Customer createCustomerIfNotExists(String id, String name, String phone, String address, DeliveryZone zone) { /* ... โค้ดเดิม ... */ return customerRepository.findById(id).orElseGet(() -> { Customer c=new Customer(); c.setCustomerID(id); c.setName(name); c.setPhone(phone); c.setAddress(address); c.setDeliveryZone(zone); System.out.println("Creating Cust: "+name); return customerRepository.save(c); }); }
-    private User createUserIfNotExists(String id, String username, String password, String role) { /* ... โค้ดเดิม ... */ return userRepository.findById(id).orElseGet(() -> { User u=new User(); u.setUserID(id); u.setUsername(username); u.setPasswordHash(password); u.setRole(role); System.out.println("Creating User: "+username); return userRepository.save(u); }); }
+    
+    // <<< อัปเดต Helper Method นี้ >>>
+    private User createUserIfNotExists(String id, String username, String plainPassword, String role) {
+        // ค้นหาด้วย Username
+        return userRepository.findByUsername(username).orElseGet(() -> { 
+            User u = new User();
+            u.setUserID(id);
+            u.setUsername(username);
+            
+            // *** เข้ารหัสผ่านก่อน Save ***
+            u.setPasswordHash(passwordEncoder.encode(plainPassword)); // ใช้ .encode()
+            
+            u.setRole(role);
+            System.out.println("Creating User: " + username + " (Role: " + role + ")");
+            return userRepository.save(u);
+        });
+    }
 
     // <<< เพิ่ม Helper สำหรับ Supplier >>>
     private Supplier createSupplierIfNotExists(String id, String name, String contact) {

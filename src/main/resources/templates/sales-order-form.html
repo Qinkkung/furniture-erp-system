@@ -1,338 +1,350 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout-main(
+        pageTitle='สร้าง Sales Order ใหม่',
+        pageContent=~{ :: #so-form-content }
+      )}">
 <head>
-    <meta charset="UTF-8">
-    <title>สร้าง Sales Order ใหม่</title>
-    <style>
-        body { font-family: sans-serif; margin: 20px; }
-        .error { color: red; border: 1px solid red; padding: 10px; margin-bottom: 15px; }
-        .success { color: green; border: 1px solid green; padding: 10px; margin-bottom: 15px; }
-        label { display: block; margin-top: 10px; font-weight: bold; }
-        input[type=text], input[type=number], select, textarea { width: 300px; padding: 8px; margin-bottom: 5px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        table { border-collapse: collapse; margin-top: 15px; width: 100%;}
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
-        button { background-color: #4CAF50; color: white; padding: 10px 15px; margin-top: 10px; border: none; border-radius: 4px; cursor: pointer; }
-        button:hover { background-color: #45a049; }
-        a { text-decoration: none; color: #007bff; margin-left: 10px;}
-        a:hover { text-decoration: underline; }
-        .remove-item { background-color: #f44336; padding: 3px 8px; font-size: 0.8em; margin: 0; }
-        .remove-item:hover { background-color: #da190b; }
-        #summary { margin-top: 20px; text-align: right; width: 400px; float: right; border-top: 1px solid #ccc; padding-top: 10px;}
-        hr { border: 0; border-top: 1px solid #eee; margin: 20px 0; }
-        .item-adder { border: 1px solid #eee; padding: 15px; margin-bottom: 15px; background-color: #f9f9f9; border-radius: 5px; }
-        #atsDisplay { color: #555; font-style: italic; font-size: 0.9em; }
-        #customerInfo { font-size: 0.9em; color: gray; margin-top: 5px; }
-    </style>
-</head>
+    </head>
 <body>
-    <h1>สร้าง Sales Order ใหม่</h1>
 
-    <div th:if="${errorMessage}" class="error" th:text="${errorMessage}"></div>
-    <div th:if="${successMessage}" class="success" th:text="${successMessage}"></div>
+    <main id="so-form-content">
 
-    <form id="soForm" th:action="@{/sales-orders/save}" method="post">
+        <style>
+            .error { color: red; border: 1px solid red; padding: 10px; margin-bottom: 15px; }
+            .success { color: green; border: 1px solid green; padding: 10px; margin-bottom: 15px; }
+            label { display: block; margin-top: 10px; font-weight: bold; }
+            input[type=text], input[type=number], select, textarea { width: 300px; padding: 8px; margin-bottom: 5px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+            table { border-collapse: collapse; margin-top: 15px; width: 100%;}
+            th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; }
+            button { background-color: #4CAF50; color: white; padding: 10px 15px; margin-top: 10px; border: none; border-radius: 4px; cursor: pointer; }
+            button:hover { background-color: #45a049; }
+            /* แก้ไขปุ่มยกเลิก */
+            a { text-decoration: none; }
+            a button { background-color: #6c757d; margin-left: 10px;}
+            .remove-item { background-color: #f44336; padding: 3px 8px; font-size: 0.8em; margin: 0; }
+            .remove-item:hover { background-color: #da190b; }
+            #summary { margin-top: 20px; text-align: right; width: 400px; float: right; border-top: 1px solid #ccc; padding-top: 10px;}
+            hr { border: 0; border-top: 1px solid #eee; margin: 20px 0; }
+            .item-adder { border: 1px solid #eee; padding: 15px; margin-bottom: 15px; background-color: #f9f9f9; border-radius: 5px; }
+            #atsDisplay { color: #555; font-style: italic; font-size: 0.9em; }
+            #customerInfo { font-size: 0.9em; color: gray; margin-top: 5px; }
+        </style>
 
-        <div>
-            <label for="customerId">ลูกค้า:</label>
-            <select id="customerId" name="customerId" required>
-                <option value="">-- กรุณาเลือกลูกค้า --</option>
-                <option th:each="cust : ${customers}"
-                        th:value="${cust.customerID}"
-                        th:text="${cust.name} + ' (' + ${cust.customerID} + ')'">
-                </option>
-            </select>
-            <div id="customerInfo"></div>
-        </div>
+        <h1>สร้าง Sales Order ใหม่</h1>
 
-        <hr>
+        <div th:if="${errorMessage}" class="error" th:text="${errorMessage}"></div>
+        <div th:if="${successMessage}" class="success" th:text="${successMessage}"></div>
 
-        <h2>เพิ่มรายการสินค้า</h2>
-        <div class="item-adder">
+        <form id="soForm" th:action="@{/sales-orders/save}" method="post">
+
             <div>
-                <label for="productSelect">เลือกสินค้าหลัก:</label>
-                <select id="productSelect">
-                    <option value="">-- เลือกสินค้า --</option>
-                    <option th:each="prod : ${products}"
-                            th:value="${prod.productID}"
-                            th:text="${prod.name}">
+                <label for="customerId">ลูกค้า:</label>
+                <select id="customerId" name="customerId" required>
+                    <option value="">-- กรุณาเลือกลูกค้า --</option>
+                    <option th:each="cust : ${customers}"
+                            th:value="${cust.customerID}"
+                            th:text="${cust.name} + ' (' + ${cust.customerID} + ')'">
                     </option>
                 </select>
+                <div id="customerInfo"></div>
             </div>
-            <div>
-                <label for="variantSelect">เลือกตัวเลือก (SKU):</label>
-                <select id="variantSelect" required>
-                    <option value="">-- กรุณาเลือกสินค้าหลักก่อน --</option>
-                </select>
-                <span id="atsDisplay">(ATS: -)</span>
+
+            <hr>
+
+            <h2>เพิ่มรายการสินค้า</h2>
+            <div class="item-adder">
+                <div>
+                    <label for="productSelect">เลือกสินค้าหลัก:</label>
+                    <select id="productSelect">
+                        <option value="">-- เลือกสินค้า --</option>
+                        <option th:each="prod : ${products}"
+                                th:value="${prod.productID}"
+                                th:text="${prod.name}">
+                        </option>
+                    </select>
+                </div>
+                <div>
+                    <label for="variantSelect">เลือกตัวเลือก (SKU):</label>
+                    <select id="variantSelect" required>
+                        <option value="">-- กรุณาเลือกสินค้าหลักก่อน --</option>
+                    </select>
+                    <span id="atsDisplay">(ATS: -)</span>
+                </div>
+                <div>
+                    <label for="quantityInput">จำนวน:</label>
+                    <input type="number" id="quantityInput" value="1" min="1" required>
+                </div>
+                <button type="button" id="addItemButton">เพิ่มรายการนี้</button>
             </div>
-            <div>
-                <label for="quantityInput">จำนวน:</label>
-                <input type="number" id="quantityInput" value="1" min="1" required>
+
+            <hr>
+
+            <h2>รายการสินค้าในออเดอร์</h2>
+            <table id="orderItemsTable">
+                <thead>
+                    <tr>
+                        <th>SKU</th>
+                        <th>ชื่อสินค้า</th>
+                        <th>จำนวน</th>
+                        <th>ราคา/หน่วย</th>
+                        <th>ราคารวม</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    </tbody>
+            </table>
+
+            <div id="summary">
+                <p>ราคารวม (Subtotal): <span id="subtotalValue">0.00</span></p>
+                <p>ค่าจัดส่ง (Delivery Fee): <span id="deliveryFeeValue">0.00</span></p>
+                <p>ภาษีมูลค่าเพิ่ม (VAT 7%): <span id="vatValue">0.00</span></p>
+                <hr style="margin: 5px 0;">
+                <h3>ยอดสุทธิ (Grand Total): <span id="grandTotalValue">0.00</span></h3>
             </div>
-            <button type="button" id="addItemButton">เพิ่มรายการนี้</button>
-        </div>
+            <div style="clear: both;"></div>
 
-        <hr>
+            <button type="submit">บันทึก Sales Order</button>
+            <a th:href="@{/sales-orders}"><button type="button">ยกเลิก</button></a>
+        </form>
 
-        <h2>รายการสินค้าในออเดอร์</h2>
-        <table id="orderItemsTable">
-            <thead>
-                <tr>
-                    <th>SKU</th>
-                    <th>ชื่อสินค้า</th>
-                    <th>จำนวน</th>
-                    <th>ราคา/หน่วย</th>
-                    <th>ราคารวม</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                </tbody>
-        </table>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // Variable declarations
+                const productSelect = document.getElementById('productSelect');
+                const variantSelect = document.getElementById('variantSelect');
+                const atsDisplay = document.getElementById('atsDisplay');
+                const quantityInput = document.getElementById('quantityInput');
+                const addItemButton = document.getElementById('addItemButton');
+                const orderItemsTableBody = document.querySelector('#orderItemsTable tbody');
+                const customerSelect = document.getElementById('customerId');
+                const customerInfoDiv = document.getElementById('customerInfo');
+                const deliveryFeeValueSpan = document.getElementById('deliveryFeeValue');
+                const subtotalValueSpan = document.getElementById('subtotalValue');
+                const vatValueSpan = document.getElementById('vatValue');
+                const grandTotalValueSpan = document.getElementById('grandTotalValue');
 
-        <div id="summary">
-            <p>ราคารวม (Subtotal): <span id="subtotalValue">0.00</span></p>
-            <p>ค่าจัดส่ง (Delivery Fee): <span id="deliveryFeeValue">0.00</span></p>
-            <p>ภาษีมูลค่าเพิ่ม (VAT 7%): <span id="vatValue">0.00</span></p>
-            <hr style="margin: 5px 0;">
-            <h3>ยอดสุทธิ (Grand Total): <span id="grandTotalValue">0.00</span></h3>
-        </div>
-        <div style="clear: both;"></div>
+                let currentVariantsData = {};
+                let currentDeliveryFee = 0.00;
+                let currentAvailableStock = 0;
 
-        <button type="submit">บันทึก Sales Order</button>
-        <a th:href="@{/sales-orders}">ยกเลิก</a>
-    </form>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Variable declarations
-            const productSelect = document.getElementById('productSelect');
-            const variantSelect = document.getElementById('variantSelect');
-            const atsDisplay = document.getElementById('atsDisplay');
-            const quantityInput = document.getElementById('quantityInput');
-            const addItemButton = document.getElementById('addItemButton');
-            const orderItemsTableBody = document.querySelector('#orderItemsTable tbody');
-            const customerSelect = document.getElementById('customerId');
-            const customerInfoDiv = document.getElementById('customerInfo');
-            const deliveryFeeValueSpan = document.getElementById('deliveryFeeValue');
-            const subtotalValueSpan = document.getElementById('subtotalValue');
-            const vatValueSpan = document.getElementById('vatValue');
-            const grandTotalValueSpan = document.getElementById('grandTotalValue');
-
-            let currentVariantsData = {};
-            let currentDeliveryFee = 0.00;
-            let currentAvailableStock = 0;
-
-            // --- 1. Product Selection Change Event ---
-            productSelect.addEventListener('change', function() {
-                const selectedProductId = this.value;
-                variantSelect.innerHTML = '<option value="">-- กำลังโหลด SKU... --</option>';
-                atsDisplay.textContent = '(ATS: -)';
-                currentVariantsData = {};
-                currentAvailableStock = 0;
-
-                if (selectedProductId) {
-                    fetch(`/products/variants/${selectedProductId}`)
-                        .then(response => response.ok ? response.json() : Promise.reject('Failed to load variants'))
-                        .then(variants => {
-                            variantSelect.innerHTML = '<option value="">-- เลือกตัวเลือก (SKU) --</option>';
-                            if (variants && (Array.isArray(variants) ? variants.length > 0 : Object.keys(variants).length > 0)) {
-                               let variantList = Array.isArray(variants) ? variants : Object.values(variants);
-                               variantList.forEach(variant => {
-                                    if(variant && variant.variantID) {
-                                        currentVariantsData[variant.variantID] = variant; // Store variant data
-                                        const option = document.createElement('option');
-                                        option.value = variant.variantID;
-                                        let displayText = variant.skuCode;
-                                        if (variant.attributes) { try { const attrs = JSON.parse(variant.attributes); displayText += ` (${Object.entries(attrs).map(([key, value]) => `${key}: ${value}`).join(', ')})`; } catch (e) {} }
-                                        option.textContent = displayText;
-                                        variantSelect.appendChild(option);
-                                    }
-                                });
-                            } else {
-                                variantSelect.innerHTML = '<option value="">-- ไม่มี SKU --</option>';
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error fetching variants:', error);
-                            variantSelect.innerHTML = '<option value="">-- Error --</option>';
-                        });
-                } else {
-                     variantSelect.innerHTML = '<option value="">-- กรุณาเลือกสินค้าหลักก่อน --</option>';
-                }
-            });
-
-            // --- 2. Variant Selection Change Event (Fetch Real ATS) ---
-            variantSelect.addEventListener('change', function() {
-                const selectedVariantId = this.value;
-                atsDisplay.textContent = '(ATS: กำลังโหลด...)';
-                currentAvailableStock = 0;
-                if (selectedVariantId) {
-                    fetch(`/api/inventory/ats/${selectedVariantId}`)
-                        .then(response => response.ok ? response.json() : Promise.reject('Failed to load ATS'))
-                        .then(data => {
-                            currentAvailableStock = data.ats;
-                            atsDisplay.textContent = `(ATS: ${currentAvailableStock})`;
-                        })
-                        .catch(error => {
-                            console.error('Error fetching ATS:', error);
-                            atsDisplay.textContent = '(ATS: Error)';
-                        });
-                } else {
+                // --- 1. Product Selection Change Event ---
+                productSelect.addEventListener('change', function() {
+                    const selectedProductId = this.value;
+                    variantSelect.innerHTML = '<option value="">-- กำลังโหลด SKU... --</option>';
                     atsDisplay.textContent = '(ATS: -)';
-                }
-            });
+                    currentVariantsData = {};
+                    currentAvailableStock = 0;
 
-            // --- 3. Add Item Button Click Event (Corrected) ---
-            addItemButton.addEventListener('click', function() {
-                const selectedVariantId = variantSelect.value;
-                const quantity = parseInt(quantityInput.value);
-                const variantData = currentVariantsData[selectedVariantId];
-
-                // --- Basic Validations ---
-                if (!variantData) { alert('กรุณาเลือก SKU ก่อน'); return; }
-                if (isNaN(quantity) || quantity <= 0) { alert('กรุณากรอกจำนวนให้ถูกต้อง'); return; }
-
-                // --- Check ATS (using the fetched value) ---
-                if (quantity > currentAvailableStock) {
-                    alert(`สต็อกไม่พอ! เหลือเพียง ${currentAvailableStock} ชิ้น`);
-                    return;
-                }
-
-                // --- Check if row already exists ---
-                const existingRow = orderItemsTableBody.querySelector(`tr[data-variant-id="${selectedVariantId}"]`);
-
-                if (existingRow) {
-                    // --- Update existing row ---
-                    const qtySpan = existingRow.cells[2].querySelector('span');
-                    const currentQty = parseInt(qtySpan.textContent);
-                    const newQty = currentQty + quantity;
-
-                    // Re-check ATS for the new total quantity
-                    if (newQty > currentAvailableStock) {
-                       alert(`สต็อกไม่พอ! มีอยู่แล้ว ${currentQty} ชิ้น ต้องการเพิ่มอีก ${quantity} ชิ้น แต่เหลือเพียง ${currentAvailableStock} ชิ้น`);
-                       return;
+                    if (selectedProductId) {
+                        fetch(`/products/variants/${selectedProductId}`)
+                            .then(response => response.ok ? response.json() : Promise.reject('Failed to load variants'))
+                            .then(variants => {
+                                variantSelect.innerHTML = '<option value="">-- เลือกตัวเลือก (SKU) --</option>';
+                                if (variants && (Array.isArray(variants) ? variants.length > 0 : Object.keys(variants).length > 0)) {
+                                   let variantList = Array.isArray(variants) ? variants : Object.values(variants);
+                                   variantList.forEach(variant => {
+                                        if(variant && variant.variantID) {
+                                            currentVariantsData[variant.variantID] = variant; // Store variant data
+                                            const option = document.createElement('option');
+                                            option.value = variant.variantID;
+                                            
+                                            // (*** FIX 1: ใช้ DTO Fields ***)
+                                            let displayText = variant.skuCode;
+                                            if (variant.productName && variant.productName !== 'Unknown Product') { // <<< ใช้ productName
+                                                displayText += ` - ${variant.productName}`;
+                                            }
+                                            if (variant.attributesJson) { // <<< ใช้ attributesJson
+                                                try { 
+                                                    const attrs = JSON.parse(variant.attributesJson); 
+                                                    displayText += ` (${Object.entries(attrs).map(([key, value]) => `${key}: ${value}`).join(', ')})`; 
+                                                } catch (e) {} 
+                                            }
+                                            
+                                            option.textContent = displayText;
+                                            variantSelect.appendChild(option);
+                                        }
+                                    });
+                                } else {
+                                    variantSelect.innerHTML = '<option value="">-- ไม่มี SKU --</option>';
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error fetching variants:', error);
+                                variantSelect.innerHTML = '<option value="">-- Error --</option>';
+                            });
+                    } else {
+                         variantSelect.innerHTML = '<option value="">-- กรุณาเลือกสินค้าหลักก่อน --</option>';
                     }
-
-                    // Update hidden input JSON value
-                    const itemDataInput = existingRow.querySelector('input[name="itemsJson"]');
-                    const itemData = { variantId: selectedVariantId, quantity: newQty };
-                    try {
-                        itemDataInput.value = JSON.stringify(itemData);
-                    } catch (e) { console.error("Error updating JSON:", itemData, e); return; }
-
-                    qtySpan.textContent = newQty; // Update displayed quantity
-                    const unitPrice = parseFloat(existingRow.cells[3].textContent);
-                    existingRow.cells[4].textContent = (unitPrice * newQty).toFixed(2); // Update total price
-                } else {
-                    // --- Add new row ---
-                    const newRow = orderItemsTableBody.insertRow();
-                    newRow.setAttribute('data-variant-id', selectedVariantId); // Set data attribute
-
-                    const cellSku = newRow.insertCell();
-                    const cellName = newRow.insertCell();
-                    const cellQty = newRow.insertCell();
-                    const cellPrice = newRow.insertCell();
-                    const cellTotal = newRow.insertCell();
-                    const cellAction = newRow.insertCell();
-
-                    // Create hidden input with JSON string
-                    const itemData = { variantId: variantData.variantID, quantity: quantity };
-                    let jsonString = '';
-                    try {
-                       jsonString = JSON.stringify(itemData);
-                       // Use single quotes for HTML attribute value, JSON uses double quotes
-                       cellSku.innerHTML = `<input type="hidden" name="itemsJson" value='${jsonString}'>${variantData.skuCode}`;
-                    } catch (e) {
-                        console.error("Error stringifying itemData:", itemData, e);
-                        alert("เกิดข้อผิดพลาดในการเตรียมข้อมูลสินค้า");
-                        return; // Stop adding the row
-                    }
-
-                    // Display name (assuming variantData includes productName or similar)
-                    // You might need to adjust your API (/products/variants/{id}) to include the Product Name
-                    let displayName = variantData.productName || (variantData.product ? variantData.product.name : variantData.skuCode); // Fallback to SKU code
-                    if (variantData.attributes) { try { const attrs = JSON.parse(variantData.attributes); displayName += ` (${Object.entries(attrs).map(([k, v]) => `${k}: ${v}`).join(', ')})`; } catch (e) {} }
-                    cellName.textContent = displayName;
-
-                    cellQty.innerHTML = `<span>${quantity}</span>`; // Display quantity in a span
-                    const unitPrice = parseFloat(variantData.unitPrice);
-                    cellPrice.textContent = unitPrice.toFixed(2);
-                    cellTotal.textContent = (unitPrice * quantity).toFixed(2);
-                    cellAction.innerHTML = `<button type="button" class="remove-item">ลบ</button>`;
-
-                    // Add event listener to the new remove button
-                    cellAction.querySelector('.remove-item').addEventListener('click', function() {
-                        removeRowAndRecalculate(this.closest('tr'));
-                    });
-                }
-
-                calculateTotals(); // Recalculate totals
-                quantityInput.value = "1"; // Reset quantity input
-            });
-
-            // --- 4. Remove Row Function ---
-            function removeRowAndRecalculate(row) {
-                row.remove();
-                calculateTotals();
-            }
-            // Add event listener to table body for dynamically added remove buttons
-            orderItemsTableBody.addEventListener('click', function(event) {
-                if (event.target.classList.contains('remove-item')) {
-                    removeRowAndRecalculate(event.target.closest('tr'));
-                }
-            });
-
-            // --- 5. Calculate Totals Function ---
-            function calculateTotals() {
-                let subtotal = 0.00;
-                orderItemsTableBody.querySelectorAll('tr').forEach(row => {
-                    const totalCell = row.cells[4];
-                    if (totalCell) { subtotal += parseFloat(totalCell.textContent) || 0; }
                 });
 
-                const vat = subtotal * 0.07;
-                const grandTotal = subtotal + vat + currentDeliveryFee; // Use currentDeliveryFee
+                // --- 2. Variant Selection Change Event (Fetch Real ATS) ---
+                variantSelect.addEventListener('change', function() {
+                    const selectedVariantId = this.value;
+                    atsDisplay.textContent = '(ATS: กำลังโหลด...)';
+                    currentAvailableStock = 0;
+                    if (selectedVariantId) {
+                        fetch(`/api/inventory/ats/${selectedVariantId}`)
+                            .then(response => response.ok ? response.json() : Promise.reject('Failed to load ATS'))
+                            .then(data => {
+                                currentAvailableStock = data.ats;
+                                atsDisplay.textContent = `(ATS: ${currentAvailableStock})`;
+                            })
+                            .catch(error => {
+                                console.error('Error fetching ATS:', error);
+                                atsDisplay.textContent = '(ATS: Error)';
+                            });
+                    } else {
+                        atsDisplay.textContent = '(ATS: -)';
+                    }
+                });
 
-                subtotalValueSpan.textContent = subtotal.toFixed(2);
-                vatValueSpan.textContent = vat.toFixed(2);
-                grandTotalValueSpan.textContent = grandTotal.toFixed(2);
-            }
+                // --- 3. Add Item Button Click Event (Corrected) ---
+                addItemButton.addEventListener('click', function() {
+                    const selectedVariantId = variantSelect.value;
+                    const quantity = parseInt(quantityInput.value);
+                    const variantData = currentVariantsData[selectedVariantId];
 
-            // --- 6. Customer Selection Change Event (Fetch Real Delivery Fee) ---
-            customerSelect.addEventListener('change', function() {
-                 const selectedCustomerId = this.value;
-                 customerInfoDiv.textContent = 'กำลังโหลดข้อมูลลูกค้า...';
-                 deliveryFeeValueSpan.textContent = '0.00';
-                 currentDeliveryFee = 0.00; // Reset delivery fee
+                    // --- Basic Validations ---
+                    if (!variantData) { alert('กรุณาเลือก SKU ก่อน'); return; }
+                    if (isNaN(quantity) || quantity <= 0) { alert('กรุณากรอกจำนวนให้ถูกต้อง'); return; }
+                    if (quantity > currentAvailableStock) {
+                        alert(`สต็อกไม่พอ! เหลือเพียง ${currentAvailableStock} ชิ้น`);
+                        return;
+                    }
 
-                 if (selectedCustomerId) {
-                     // Fetch customer info and delivery fee
-                     fetch(`/api/customers/info/${selectedCustomerId}`)
-                         .then(response => response.ok ? response.json() : Promise.reject('Failed to load customer info'))
-                         .then(data => {
-                             currentDeliveryFee = parseFloat(data.deliveryFee) || 0.00; // Store the fee
-                             deliveryFeeValueSpan.textContent = currentDeliveryFee.toFixed(2);
-                             customerInfoDiv.textContent = `(โซน: ${data.zoneName || 'N/A'}, ค่าส่ง: ${currentDeliveryFee.toFixed(2)} บาท)`;
-                             calculateTotals(); // Recalculate totals with the new fee
-                         })
-                         .catch(error => {
-                             console.error('Error fetching customer info:', error);
-                             customerInfoDiv.textContent = '(Error โหลดข้อมูลลูกค้า)';
-                             calculateTotals(); // Recalculate with 0 fee on error
-                         });
-                 } else {
-                      customerInfoDiv.textContent = ''; // Clear info if no customer selected
-                      calculateTotals(); // Recalculate with 0 fee
-                 }
-            });
+                    const existingRow = orderItemsTableBody.querySelector(`tr[data-variant-id="${selectedVariantId}"]`);
 
-            // Initial calculation on page load
-            calculateTotals();
+                    if (existingRow) {
+                        // --- Update existing row ---
+                        const qtySpan = existingRow.cells[2].querySelector('span');
+                        const currentQty = parseInt(qtySpan.textContent);
+                        const newQty = currentQty + quantity;
 
-        }); // End DOMContentLoaded
-    </script>
+                        if (newQty > currentAvailableStock) {
+                           alert(`สต็อกไม่พอ! มีอยู่แล้ว ${currentQty} ชิ้น ต้องการเพิ่มอีก ${quantity} ชิ้น แต่เหลือเพียง ${currentAvailableStock} ชิ้น`);
+                           return;
+                        }
+
+                        const itemDataInput = existingRow.querySelector('input[name="itemsJson"]');
+                        const itemData = { variantId: selectedVariantId, quantity: newQty };
+                        try {
+                            // (*** FIX 2: เข้ารหัส (Encode) ตอน Update ***)
+                            itemDataInput.value = encodeURIComponent(JSON.stringify(itemData));
+                        } catch (e) { console.error("Error updating JSON:", itemData, e); return; }
+
+                        qtySpan.textContent = newQty; 
+                        const unitPrice = parseFloat(existingRow.cells[3].textContent);
+                        existingRow.cells[4].textContent = (unitPrice * newQty).toFixed(2); 
+                    } else {
+                        // --- Add new row ---
+                        const newRow = orderItemsTableBody.insertRow();
+                        newRow.setAttribute('data-variant-id', selectedVariantId); 
+
+                        const cellSku = newRow.insertCell();
+                        const cellName = newRow.insertCell();
+                        const cellQty = newRow.insertCell();
+                        const cellPrice = newRow.insertCell();
+                        const cellTotal = newRow.insertCell();
+                        const cellAction = newRow.insertCell();
+
+                        const itemData = { variantId: variantData.variantID, quantity: quantity };
+                        try {
+                           // (*** FIX 3: เข้ารหัส (Encode) ตอน Add ***)
+                           const jsonString = JSON.stringify(itemData);
+                           const encodedJsonString = encodeURIComponent(jsonString);
+                           cellSku.innerHTML = `<input type="hidden" name="itemsJson" value='${encodedJsonString}'>${variantData.skuCode}`;
+                        } catch (e) {
+                            console.error("Error stringifying itemData:", itemData, e);
+                            alert("เกิดข้อผิดพลาดในการเตรียมข้อมูลสินค้า");
+                            return; 
+                        }
+
+                        // (*** FIX 4: ใช้ DTO Fields ***)
+                        let displayName = variantData.productName || variantData.skuCode; // <<< ใช้ productName
+                        if (variantData.attributesJson) { // <<< ใช้ attributesJson
+                            try { const attrs = JSON.parse(variantData.attributesJson); displayName += ` (${Object.entries(attrs).map(([k, v]) => `${k}: ${v}`).join(', ')})`; } catch (e) {} 
+                        }
+                        cellName.textContent = displayName;
+
+                        cellQty.innerHTML = `<span>${quantity}</span>`; 
+                        const unitPrice = parseFloat(variantData.unitPrice);
+                        cellPrice.textContent = unitPrice.toFixed(2);
+                        cellTotal.textContent = (unitPrice * quantity).toFixed(2);
+                        cellAction.innerHTML = `<button type="button" class="remove-item">ลบ</button>`;
+
+                        cellAction.querySelector('.remove-item').addEventListener('click', function() {
+                            removeRowAndRecalculate(this.closest('tr'));
+                        });
+                    }
+
+                    calculateTotals(); 
+                    quantityInput.value = "1"; 
+                });
+
+                // --- 4. Remove Row Function ---
+                function removeRowAndRecalculate(row) {
+                    row.remove();
+                    calculateTotals();
+                }
+                orderItemsTableBody.addEventListener('click', function(event) {
+                    if (event.target.classList.contains('remove-item')) {
+                        removeRowAndRecalculate(event.target.closest('tr'));
+                    }
+                });
+
+                // --- 5. Calculate Totals Function ---
+                function calculateTotals() {
+                    let subtotal = 0.00;
+                    orderItemsTableBody.querySelectorAll('tr').forEach(row => {
+                        const totalCell = row.cells[4];
+                        if (totalCell) { subtotal += parseFloat(totalCell.textContent) || 0; }
+                    });
+
+                    const vat = subtotal * 0.07;
+                    const grandTotal = subtotal + vat + currentDeliveryFee; 
+
+                    subtotalValueSpan.textContent = subtotal.toFixed(2);
+                    vatValueSpan.textContent = vat.toFixed(2);
+                    grandTotalValueSpan.textContent = grandTotal.toFixed(2);
+                }
+
+                // --- 6. Customer Selection Change Event (Fetch Real Delivery Fee) ---
+                customerSelect.addEventListener('change', function() {
+                     const selectedCustomerId = this.value;
+                     customerInfoDiv.textContent = 'กำลังโหลดข้อมูลลูกค้า...';
+                     deliveryFeeValueSpan.textContent = '0.00';
+                     currentDeliveryFee = 0.00; 
+
+                     if (selectedCustomerId) {
+                         fetch(`/api/customers/info/${selectedCustomerId}`)
+                             .then(response => response.ok ? response.json() : Promise.reject('Failed to load customer info'))
+                             .then(data => {
+                                 currentDeliveryFee = parseFloat(data.deliveryFee) || 0.00; 
+                                 deliveryFeeValueSpan.textContent = currentDeliveryFee.toFixed(2);
+                                 customerInfoDiv.textContent = `(โซน: ${data.zoneName || 'N/A'}, ค่าส่ง: ${currentDeliveryFee.toFixed(2)} บาท)`;
+                                 calculateTotals(); 
+                             })
+                             .catch(error => {
+                                 console.error('Error fetching customer info:', error);
+                                 customerInfoDiv.textContent = '(Error โหลดข้อมูลลูกค้า)';
+                                 calculateTotals(); 
+                             });
+                     } else {
+                          customerInfoDiv.textContent = ''; 
+                          calculateTotals(); 
+                     }
+                });
+
+                // Initial calculation on page load
+                calculateTotals();
+
+            }); // End DOMContentLoaded
+        </script>
+
+    </main>
 
 </body>
 </html>

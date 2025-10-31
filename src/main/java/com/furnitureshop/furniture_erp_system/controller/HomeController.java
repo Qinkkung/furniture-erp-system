@@ -69,4 +69,13 @@ public class HomeController {
 
         return "dashboard"; // อ้างอิงถึงไฟล์ "dashboard.html"
     }
+
+    /**
+     * === เพิ่ม Method นี้ ===
+     * จัดการหน้า Login
+     */
+    @GetMapping("/login")
+    public String showLoginPage() {
+        return "login"; // คืนค่าไฟล์ "login.html"
+    }
 }
