@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout-main(
+        pageTitle='Dashboard (ฝ่ายขาย)',
+        pageContent=~{ :: #dashboard-sales-content }
+      )}">
+<head>
+    </head>
+<body>
+
+    <main id="dashboard-sales-content">
+
+        <style>
+            h1 { border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+            .widget-container { display: flex; flex-wrap: wrap; gap: 20px; }
+            .widget { background-color: white; border: 1px solid #ddd; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+            .widget-small { flex-basis: 200px; text-align: center; }
+            .widget-large { flex-basis: 400px; }
+            .widget-small .count { font-size: 3em; font-weight: bold; color: #007bff; }
+            .widget-small .title { font-size: 1.1em; color: #555; }
+            .widget-large h3 { margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 5px;}
+        </style>
+
+        <h1>Dashboard ฝ่ายขาย</h1>
+        <p>สรุปภาพรวมและสถานะงานของคุณ</p>
+    
+        <div class="widget-container">
+        
+            <div class="widget widget-small">
+                <div class="count" th:text="${#numbers.formatDecimal(todaySales, 1, 'COMMA', 2, 'POINT')}">0.00</div>
+                <div class="title">ยอดขายส่วนตัว (วันนี้)</div>
+            </div>
+
+            <div class="widget widget-small">
+                <div class="count" th:text="${awaitingShipmentCount}">0</div>
+                <div class="title">SO รอจัดส่ง (ของคุณ)</div>
+            </div>
+
+            <div class="widget widget-large">
+                <h3>สถานะจัดส่งล่าสุด (ยังไม่ได้ทำ Logic)</h3>
+                <p>Logic ส่วนนี้ต้องดึงข้อมูล Shipment ที่เชื่อมกับ Order ของคุณ</p>
+            </div>
+    
+        </div>
+        
+    </main>
+
+</body>
+</html>

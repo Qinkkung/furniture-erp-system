@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout-main(
+        pageTitle='ขายหน้าร้าน (POS)',
+        pageContent=~{ :: #pos-form-content }
+      )}">
+<head>
+    </head>
+<body>
+
+    <main id="pos-form-content">
+
+        <style>
+            .pos-container { display: flex; gap: 20px; }
+            .pos-items { flex-grow: 1; }
+            .pos-cart { width: 400px; flex-shrink: 0; background: #f9f9f9; border: 1px solid #eee; border-radius: 5px; padding: 15px; }
+            label { display: block; margin-top: 10px; font-weight: bold; }
+            select, input[type=number] { width: 100%; padding: 8px; margin-bottom: 5px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+            table { border-collapse: collapse; margin-top: 15px; width: 100%;}
+            th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; }
+            button { padding: 10px 15px; margin-top: 10px; cursor: pointer; border: none; border-radius: 4px; color: white; width: 100%;}
+            #addItemButton { background-color: #007bff; }
+            #submitSaleButton { background-color: #28a745; font-size: 1.2em; }
+            .remove-item { background-color: #f44336; padding: 3px 8px; font-size: 0.8em; margin: 0; width: auto;}
+            #summary { margin-top: 20px; border-top: 1px solid #ccc; padding-top: 10px;}
+            #summary p { display: flex; justify-content: space-between; margin: 5px 0; }
+            #summary h3 { display: flex; justify-content: space-between; }
+            #atsDisplay { color: #555; font-style: italic; font-size: 0.9em; }
+            /* (Class สำหรับ Error/Success Messages) */
+            #posMessage { padding: 10px; margin-bottom: 15px; border-radius: 4px; display: none; }
+            #posMessage.error { color: red; border: 1px solid red; background: #f8d7da; }
+            #posMessage.success { color: green; border: 1px solid green; background: #d1e7dd; }
+        </style>
+
+        <h1>ขายหน้าร้าน (Point-of-Sale)</h1>
+        
+        <div id="posMessage"></div>
+
+        <div class="pos-container">
+
+            <div class="pos-items">
+                <h2>เพิ่มรายการสินค้า</h2>
+                <div>
+                    <label for="variantSelect">เลือกสินค้า (SKU):</label>
+                    <select id="variantSelect">
+                        <option value="">-- เลือก SKU --</option>
+                    </select>
+                    <span id="atsDisplay">(ATS: -)</span>
+                </div>
+                <div>
+                    <label for="quantityInput">จำนวน:</label>
+                    <input type="number" id="quantityInput" value="1" min="1">
+                </div>
+                <button type="button" id="addItemButton">เพิ่มลงตะกร้า</button>
+            </div>
+
+            <div class="pos-cart">
+                <h2>ตะกร้าสินค้า</h2>
+                <table id="cartTable">
+                    <thead> <tr> <th>SKU</th> <th>จำนวน</th> <th>ราคา</th> <th>Action</th> </tr> </thead>
+                    <tbody>
+                        </tbody>
+                </table>
+                <div id="summary">
+                    <p>ราคารวม (Subtotal): <span id="subtotalValue">0.00</span></p>
+                    <p>ภาษีมูลค่าเพิ่ม (VAT 7%): <span id="vatValue">0.00</span></p>
+                    <h3>ยอดสุทธิ: <span id="grandTotalValue">0.00</span></h3>
+                </div>
+                <button type="button" id="submitSaleButton">ชำระเงิน</button>
+            </div>
+
+        </div>
+
+        <script th:inline="javascript">
+            /* (1) โหลดข้อมูล DTO ทั้งหมดจาก Controller */
+            const variantsDtoFromServer = /*[[${variantsDto}]]*/ null;
+            const allVariantsData = {};
+            // (สร้าง Map ของ Variant เพื่อง่ายต่อการค้นหา)
+            if (variantsDtoFromServer && Array.isArray(variantsDtoFromServer)) {
+                variantsDtoFromServer.forEach(dto => { if(dto && dto.variantID) allVariantsData[dto.variantID] = dto; });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                // (ดึง Element ต่างๆ)
+                const variantSelect = document.getElementById('variantSelect');
+                const quantityInput = document.getElementById('quantityInput');
+                const addItemButton = document.getElementById('addItemButton');
+                const cartTableBody = document.querySelector('#cartTable tbody');
+                const submitSaleButton = document.getElementById('submitSaleButton');
+                const atsDisplay = document.getElementById('atsDisplay');
+                const posMessageDiv = document.getElementById('posMessage');
+
+                let currentAvailableStock = 0;
+
+                // (2) สร้าง Dropdown (เหมือน SO Form)
+                function populateVariantOptions() {
+                    variantSelect.innerHTML = '<option value="">-- เลือก SKU --</option>';
+                    Object.values(allVariantsData).sort((a,b) => a.skuCode.localeCompare(b.skuCode)).forEach(dto => {
+                        if (!dto) return;
+                        const option = document.createElement('option');
+                        option.value = dto.variantID;
+                        let displayText = dto.skuCode;
+                        if (dto.productName && dto.productName !== 'Unknown Product') { displayText += ` - ${dto.productName}`; }
+                        if (dto.attributesJson) { try { const attrs = JSON.parse(dto.attributesJson); displayText += ` (${Object.entries(attrs).map(([k, v]) => `${k}: ${v}`).join(', ')})`; } catch (e) {} }
+                        option.textContent = displayText;
+                        variantSelect.appendChild(option);
+                    });
+                }
+                populateVariantOptions();
+                
+                // (3) เมื่อเลือก SKU ให้ไปเช็ค ATS
+                variantSelect.addEventListener('change', function() {
+                    const selectedVariantId = this.value;
+                    atsDisplay.textContent = '(ATS: กำลังโหลด...)';
+                    currentAvailableStock = 0;
+                    if (selectedVariantId) {
+                        fetch(`/api/inventory/ats/${selectedVariantId}`)
+                            .then(response => response.ok ? response.json() : Promise.reject('Failed to load ATS'))
+                            .then(data => {
+                                currentAvailableStock = data.ats;
+                                atsDisplay.textContent = `(ATS: ${currentAvailableStock})`;
+                            })
+                            .catch(error => {
+                                console.error('Error fetching ATS:', error);
+                                atsDisplay.textContent = '(ATS: Error)';
+                            });
+                    } else {
+                        atsDisplay.textContent = '(ATS: -)';
+                    }
+                });
+                
+                // (4) เมื่อกด "เพิ่มลงตะกร้า"
+                addItemButton.addEventListener('click', function() {
+                    const selectedVariantId = variantSelect.value;
+                    const quantity = parseInt(quantityInput.value);
+                    const variantData = allVariantsData[selectedVariantId];
+
+                    if (!variantData) { alert('กรุณาเลือก SKU'); return; }
+                    if (isNaN(quantity) || quantity <= 0) { alert('กรุณากรอกจำนวน'); return; }
+                    if (quantity > currentAvailableStock) {
+                        alert(`สต็อกไม่พอ! (ATS: ${currentAvailableStock})`);
+                        return;
+                    }
+                    
+                    // (ตรวจสอบว่ามีในตะกร้าหรือยัง)
+                    const existingRow = cartTableBody.querySelector(`tr[data-variant-id="${selectedVariantId}"]`);
+                    if (existingRow) {
+                        // (ถ้ามีแล้ว ให้อัปเดตจำนวน)
+                        const qtyCell = existingRow.cells[1];
+                        const newQty = parseInt(qtyCell.textContent) + quantity;
+                        if (newQty > currentAvailableStock) {
+                            alert(`สต็อกไม่พอ! (มีในตะกร้า ${qtyCell.textContent} + เพิ่ม ${quantity} = ${newQty}, แต่ ATS: ${currentAvailableStock})`);
+                            return;
+                        }
+                        qtyCell.textContent = newQty;
+                    } else {
+                        // (ถ้ายังไม่มี ให้เพิ่มแถวใหม่)
+                        const newRow = cartTableBody.insertRow();
+                        newRow.setAttribute('data-variant-id', selectedVariantId);
+                        newRow.insertCell().textContent = variantData.skuCode;
+                        newRow.insertCell().textContent = quantity;
+                        newRow.insertCell().textContent = variantData.unitPrice.toFixed(2);
+                        newRow.insertCell().innerHTML = `<button type="button" class="remove-item">ลบ</button>`;
+                    }
+                    calculateTotals();
+                });
+                
+                // (5) กดปุ่ม "ลบ" ในตะกร้า
+                cartTableBody.addEventListener('click', function(event) {
+                    if (event.target.classList.contains('remove-item')) {
+                        event.target.closest('tr').remove();
+                        calculateTotals();
+                    }
+                });
+
+                // (6) คำนวณยอดรวม
+                function calculateTotals() {
+                    let subtotal = 0.00;
+                    cartTableBody.querySelectorAll('tr').forEach(row => {
+                        const qty = parseInt(row.cells[1].textContent);
+                        const price = parseFloat(row.cells[2].textContent);
+                        subtotal += (qty * price);
+                    });
+                    const vat = subtotal * 0.07;
+                    const grandTotal = subtotal + vat;
+                    
+                    document.getElementById('subtotalValue').textContent = subtotal.toFixed(2);
+                    document.getElementById('vatValue').textContent = vat.toFixed(2);
+                    document.getElementById('grandTotalValue').textContent = grandTotal.toFixed(2);
+                }
+
+                // (7) *** (สำคัญ) เมื่อกด "ชำระเงิน" ***
+                submitSaleButton.addEventListener('click', function() {
+                    const itemsInCart = [];
+                    cartTableBody.querySelectorAll('tr').forEach(row => {
+                        itemsInCart.push({
+                            variantId: row.getAttribute('data-variant-id'),
+                            quantity: parseInt(row.cells[1].textContent)
+                        });
+                    });
+                    
+                    if (itemsInCart.length === 0) {
+                        alert('ตะกร้าว่างเปล่า'); return;
+                    }
+                    
+                    // --- ดึง CSRF Token ---
+                    const csrfToken = document.querySelector('meta[name="_csrf"]').content;
+                    const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
+
+                    // (แสดงสถานะกำลังโหลด)
+                    submitSaleButton.textContent = 'กำลังบันทึก...';
+                    submitSaleButton.disabled = true;
+                    posMessageDiv.style.display = 'none';
+
+                    // (ยิง API ไปที่ @PostMapping("/pos/save"))
+                    fetch('/pos/save', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            [csrfHeader]: csrfToken 
+                        },
+                        body: JSON.stringify(itemsInCart)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.message.startsWith("เกิดข้อผิดพลาด")) {
+                            // (ถ้า Error เช่น สต็อกไม่พอ)
+                            posMessageDiv.textContent = data.message;
+                            posMessageDiv.className = 'error';
+                            posMessageDiv.style.display = 'block';
+                        } else {
+                            // (ถ้าสำเร็จ)
+                            posMessageDiv.textContent = data.message;
+                            posMessageDiv.className = 'success';
+                            posMessageDiv.style.display = 'block';
+                            
+                            // (*** โค้ดล้างค่าที่เพิ่มเข้ามา ***)
+                            document.getElementById('quantityInput').value = "1"; 
+                            document.getElementById('variantSelect').value = "";
+                            document.getElementById('atsDisplay').textContent = '(ATS: -)';
+                            // (*** จบโค้ดล้างค่า ***)
+
+                            // (ล้างตะกร้า)
+                            cartTableBody.innerHTML = '';
+                            calculateTotals();
+                            // (อัปเดต ATS ของ SKU ที่เลือกไว้)
+                            variantSelect.dispatchEvent(new Event('change'));
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Fetch Error:', error);
+                        posMessageDiv.textContent = 'การเชื่อมต่อล้มเหลว';
+                        posMessageDiv.className = 'error';
+                        posMessageDiv.style.display = 'block';
+                    })
+                    .finally(() => {
+                        // (คืนค่าปุ่ม)
+                        submitSaleButton.textContent = 'ชำระเงิน';
+                        submitSaleButton.disabled = false;
+                    });
+                });
+
+            }); // End DOMContentLoaded
+        </script>
+
+    </main>
+
+</body>
+</html>

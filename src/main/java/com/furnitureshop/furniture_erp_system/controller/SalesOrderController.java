@@ -1,14 +1,13 @@
 package com.furnitureshop.furniture_erp_system.controller;
 
-// --- Imports ---
+// --- Imports ที่จำเป็นทั้งหมด ---
 import com.furnitureshop.furniture_erp_system.model.Customer;
 import com.furnitureshop.furniture_erp_system.model.Payment;
 import com.furnitureshop.furniture_erp_system.model.Product;
 import com.furnitureshop.furniture_erp_system.model.SalesOrder;
-// DTO is nested in SalesOrderService, need static import or move DTO
 import com.furnitureshop.furniture_erp_system.service.SalesOrderService.SalesOrderItemDto;
 import com.furnitureshop.furniture_erp_system.repository.CustomerRepository;
-import com.furnitureshop.furniture_erp_system.repository.PaymentRepository;
+import com.furnitureshop.furniture_erp_system.repository.PaymentRepository; // <<< ต้องมีบรรทัดนี้
 import com.furnitureshop.furniture_erp_system.repository.ProductRepository;
 import com.furnitureshop.furniture_erp_system.repository.SalesOrderRepository;
 import com.furnitureshop.furniture_erp_system.repository.UserRepository;
@@ -26,14 +25,13 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors; // Needed if using stream().map() etc.
-
-// --- (Imports ที่ต้องเพิ่ม) ---
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.stream.Collectors;
+
 
 @Controller
-@RequestMapping("/sales-orders") // URL หลักสำหรับ SO
+@RequestMapping("/sales-orders") 
 public class SalesOrderController {
 
     // --- Autowired Services and Repositories ---
@@ -42,7 +40,7 @@ public class SalesOrderController {
     @Autowired private ProductRepository productRepository;
     @Autowired private UserRepository userRepository;
     @Autowired private SalesOrderRepository salesOrderRepository;
-    @Autowired private PaymentRepository paymentRepository;
+    @Autowired private PaymentRepository paymentRepository; // <<< Fix: Autowired ถูกต้องแล้ว
 
     /**
      * แสดงหน้ารายการ Sales Orders ทั้งหมด
@@ -68,23 +66,21 @@ public class SalesOrderController {
 
     /**
      * จัดการการ submit ฟอร์มสร้าง Sales Order
-     * (*** นี่คือ Method ที่แก้ไขแล้ว ***)
      */
     @PostMapping("/save")
     public String createSalesOrder(
             @RequestParam("customerId") String customerId,
-            @RequestParam(name = "itemsJson", required = false) List<String> encodedItemsJsonList, // (1) เปลี่ยนชื่อตัวแปร
+            @RequestParam(name = "itemsJson", required = false) List<String> encodedItemsJsonList,
             RedirectAttributes redirectAttributes) {
 
         List<SalesOrderItemDto> itemsDtoList = new ArrayList<>();
-        if (encodedItemsJsonList != null && !encodedItemsJsonList.isEmpty()) { // (2) ใช้ชื่อตัวแปรใหม่
+        if (encodedItemsJsonList != null && !encodedItemsJsonList.isEmpty()) { 
             ObjectMapper objectMapper = new ObjectMapper();
-            for (String encodedItemJson : encodedItemsJsonList) { // (3) ใช้ชื่อตัวแปรใหม่
+            for (String encodedItemJson : encodedItemsJsonList) { 
                 try {
-                    // (4) เพิ่มบรรทัดนี้เพื่อ "ถอดรหัส"
                     String itemJson = URLDecoder.decode(encodedItemJson, StandardCharsets.UTF_8.toString());
 
-                    SalesOrderItemDto dto = objectMapper.readValue(itemJson, SalesOrderItemDto.class); // (5) ใช้ itemJson ที่ถอดรหัสแล้ว
+                    SalesOrderItemDto dto = objectMapper.readValue(itemJson, SalesOrderItemDto.class); 
                     
                     if (dto.getVariantId() == null || dto.getVariantId().isEmpty() || dto.getQuantity() <= 0) {
                         throw new IllegalArgumentException("ข้อมูล Variant ID หรือ Quantity ไม่ถูกต้อง");
@@ -119,8 +115,8 @@ public class SalesOrderController {
      * แสดงหน้าฟอร์มสำหรับบันทึกการชำระเงินของ SO ที่กำหนด
      */
     @GetMapping("/payment/{id}")
-    public String showPaymentForm(@PathVariable("id") String id, Model model, RedirectAttributes redirectAttributes) { // Added RedirectAttributes
-        Optional<SalesOrder> orderOpt = salesOrderRepository.findById(id); // Use findById first
+    public String showPaymentForm(@PathVariable("id") String id, Model model, RedirectAttributes redirectAttributes) { 
+        Optional<SalesOrder> orderOpt = salesOrderRepository.findById(id); 
         if (!orderOpt.isPresent()) {
              redirectAttributes.addFlashAttribute("errorMessage", "ไม่พบ Sales Order ID: " + id);
              return "redirect:/sales-orders";
@@ -181,32 +177,24 @@ public class SalesOrderController {
     @GetMapping("/view/{id}")
     public String viewSalesOrder(@PathVariable("id") String id, Model model, RedirectAttributes redirectAttributes) {
         
-        // 1. ดึง SO (อันนี้ยังดีอยู่)
         Optional<SalesOrder> orderOpt = salesOrderRepository.findByIdWithDetails(id);
 
         if (orderOpt.isPresent()) {
             SalesOrder order = orderOpt.get();
 
-            // === (*** START FIX ***) ===
-            // 
-            // เปลี่ยนจากการใช้ order.getPayments() (ที่ข้อมูลอาจจะเก่า)
-            // มาเป็นการ query ตรงๆ จาก PaymentRepository เพื่อเอาข้อมูลล่าสุด
-            //
+            // Fix: ดึงข้อมูลล่าสุดจาก Repository โดยตรง
             List<Payment> existingPayments = paymentRepository.findBySalesOrder_OrderID(id);
             
-            BigDecimal totalPaid = BigDecimal.ZERO; // เริ่มต้นเป็น 0
-            if (existingPayments != null) { // ใช้ "existingPayments"
+            BigDecimal totalPaid = BigDecimal.ZERO; 
+            if (existingPayments != null) { 
                 totalPaid = existingPayments.stream()
-                               .map(Payment::getAmount) // ดึง BigDecimal Amount
-                               .filter(java.util.Objects::nonNull) // กรองค่า null
-                               .reduce(BigDecimal.ZERO, BigDecimal::add); // รวมยอด
+                               .map(Payment::getAmount)
+                               .filter(java.util.Objects::nonNull)
+                               .reduce(BigDecimal.ZERO, BigDecimal::add);
             }
-            // === (*** END FIX ***) ===
 
-
-            // 2. ส่งข้อมูล SO และ totalPaid ที่คำนวณใหม่ ไปให้ View
             model.addAttribute("order", order);
-            model.addAttribute("totalPaidForView", totalPaid); // <<< ส่ง totalPaid ที่ถูกต้องไป
+            model.addAttribute("totalPaidForView", totalPaid); 
 
             return "sales-order-view"; 
         } else {

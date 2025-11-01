@@ -1,13 +1,12 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
       th:replace="~{fragments/layout :: layout-main(
-        pageTitle=${product.productID == null ? 'เพิ่มสินค้าใหม่' : 'แก้ไขสินค้า'},
+        pageTitle=${isNew ? 'เพิ่มสินค้าใหม่' : 'แก้ไขสินค้า'},
         pageContent=~{ :: #product-form-content }
       )}">
 <head>
-    </head>
+</head>
 <body>
-
     <main id="product-form-content">
         
         <style>
@@ -19,33 +18,48 @@
             a button { background-color: #6c757d; margin-left: 10px;}
         </style>
 
-        <h1 th:text="${product.productID == null ? 'เพิ่มสินค้าใหม่' : 'แก้ไขสินค้า'}"></h1>
+        <h1 th:text="${isNew ? 'เพิ่มสินค้าใหม่' : 'แก้ไขสินค้า'}"></h1>
+        
+        <div th:if="${errorMessage}" th:text="${errorMessage}" style="color: red; border: 1px solid red; padding: 10px; margin-bottom: 10px;"></div>
 
-        <form th:action="${product.productID == null ? '/products/save' : '/products/update/' + product.productID}"
+        <form th:action="${isNew ? '/products/save/new' : '/products/save/update'}"
               th:object="${product}" method="post">
 
-            <input type="hidden" th:field="*{productID}" th:if="${product.productID != null}" />
+            <input type="hidden" th:field="*{productID}" th:if="${!isNew}" />
 
             <div>
                 <label for="productID_display">รหัสสินค้า (ID):</label>
-                <input type="text" id="productID_display" th:field="*{productID}" required
-                       th:readonly="${product.productID != null}">
+                <input type="text" id="productID_display" th:field="*{productID}"
+                       th:readonly="${!isNew}">
             </div>
             <div>
                 <label for="name">ชื่อสินค้า:</label>
                 <input type="text" id="name" th:field="*{name}" required>
             </div>
+            
+            <div>
+                <label>หมวดหมู่ (เลือกได้หลายรายการ):</label>
+                <div th:each="cat : ${allCategories}" style="margin-left: 20px;">
+                    <input type="checkbox" 
+                           th:id="${cat.categoryID}" 
+                           name="categoryIds" 
+                           th:value="${cat.categoryID}"
+                           th:checked="${product.categories != null && #sets.contains(product.categories, cat)}" />
+                    <label th:for="${cat.categoryID}" th:text="${cat.name} + ' (' + ${cat.type} + ')'">Category Name</label>
+                </div>
+            </div>
+
             <div>
                 <label for="description">รายละเอียด:</label>
                 <textarea id="description" th:field="*{description}" rows="4"></textarea>
             </div>
+            
             <div>
-                <button type="submit" th:text="${product.productID == null ? 'บันทึกสินค้า' : 'อัปเดตสินค้า'}"></button>
+                <button type="submit" th:text="${isNew ? 'บันทึกสินค้า' : 'อัปเดตสินค้า'}"></button>
                 <a th:href="@{/products}"><button type="button">ยกเลิก</button></a>
             </div>
         </form>
 
     </main>
-
 </body>
 </html>

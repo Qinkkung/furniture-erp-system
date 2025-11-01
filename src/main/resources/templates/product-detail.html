@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout-main(
+        pageTitle='รายละเอียดสินค้า',
+        pageContent=~{ :: #product-detail-content }
+      )}">
+<head>
+</head>
+<body>
+    <main id="product-detail-content">
+
+        <style>
+            .card { border: 1px solid #ddd; border-radius: 5px; margin-bottom: 15px; }
+            .card-header { background-color: #f2f2f2; padding: 10px; font-weight: bold; border-bottom: 1px solid #ddd; }
+            .card-body { padding: 15px; }
+            .btn { text-decoration: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; border: none; color: white; margin-right: 5px;}
+            .btn-success { background-color: #28a745; }
+            .btn-warning { background-color: #ffc107; color: black; }
+            .btn-info { background-color: #17a2b8; }
+            table { border-collapse: collapse; margin-top: 10px; width: 100%;}
+            th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+            th { background-color: #ddd; }
+            .d-flex { display: flex; justify-content: space-between; align-items: center; }
+            .text-center { text-align: center; }
+        </style>
+
+        <h1>รายละเอียดสินค้า: <span th:text="${product.name}">Product Name</span></h1>
+        
+        <div th:if="${successMessage}" style="color: green; border: 1px solid green; padding: 10px; margin-bottom: 10px;" th:text="${successMessage}"></div>
+        <div th:if="${errorMessage}" style="color: red; border: 1px solid red; padding: 10px; margin-bottom: 10px;" th:text="${errorMessage}"></div>
+
+        <div class="card">
+            <div class="card-header">ข้อมูลสินค้าหลัก</div>
+            <div class="card-body">
+                <p><strong>รหัสสินค้า (ID):</strong> <span th:text="${product.productID}">P-001</span></p>
+                <p><strong>หมวดหมู่:</strong> 
+                    <span th:each="cat, stat : ${product.categories}" th:text="${cat.name} + (${!stat.last} ? ', ' : '')"></span>
+                    <span th:if="${product.categories.isEmpty()}">N/A</span>
+                </p>
+                <p><strong>คำอธิบาย:</strong> <span th:text="${product.description}">Description</span></p>
+                <a th:href="@{/products/edit/{id}(id=${product.productID})}" class="btn btn-warning">แก้ไขข้อมูลสินค้าหลัก</a>
+            </div>
+        </div>
+
+        <div class="d-flex" style="margin-top: 20px;">
+            <h2>Product Variants (SKU)</h2>
+            <a th:href="@{/products/variant/new(productId=${product.productID})}" class="btn btn-success">
+                + เพิ่ม Variant ใหม่
+            </a>
+        </div>
+
+        <div>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>SKU ID</th>
+                        <th>SKU Code</th>
+                        <th>Attributes (JSON)</th>
+                        <th>ราคาขาย</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="variant : ${variants}">
+                        <td th:text="${variant.variantID}">V-XXX</td>
+                        <td th:text="${variant.skuCode}">SKU-CODE</td>
+                        <td th:text="${variant.attributes}">{"สี": "น้ำเงิน"}</td>
+                        <td th:text="${#numbers.formatDecimal(variant.unitPrice, 0, 'COMMA', 2, 'POINT')}">10,000.00</td>
+                        <td>
+                            <a th:href="@{/products/variant/edit/{id}(id=${variant.variantID})}" class="btn btn-info">แก้ไข</a>
+                        </td>
+                    </tr>
+                    <tr th:if="${variants.isEmpty()}">
+                        <td colspan="5" class="text-center">ไม่พบ Variants สำหรับสินค้านี้</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        </main>
+</body>
+</html>

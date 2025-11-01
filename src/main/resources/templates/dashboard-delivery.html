@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout-main(
+        pageTitle='Dashboard (ฝ่ายจัดส่ง)',
+        pageContent=~{ :: #dashboard-delivery-content }
+      )}">
+<head>
+</head>
+<body>
+    <main id="dashboard-delivery-content">
+
+        <style>
+            h1 { border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+            .widget-container { display: flex; flex-wrap: wrap; gap: 20px; }
+            .widget { background-color: white; border: 1px solid #ddd; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+            .widget-small { flex-basis: 200px; text-align: center; }
+            .widget-small .count { font-size: 3em; font-weight: bold; color: #007bff; }
+            .widget-small .title { font-size: 1.1em; color: #555; }
+        </style>
+
+        <h1>Dashboard ฝ่ายจัดส่ง</h1>
+        <p>สรุปสถานะงานจัดส่งทั้งหมด</p>
+    
+        <div class="widget-container">
+        
+            <div class="widget widget-small">
+                <div class="count" th:text="${awaitingOrdersCount}">0</div>
+                <div class="title">Orders รอสร้างใบจัดส่ง</div>
+            </div>
+
+            <div class="widget widget-small">
+                <div class="count" th:text="${processingShipmentCount}">0</div>
+                <div class="title">Shipments กำลังดำเนินการ</div>
+            </div>
+    
+        </div>
+        
+    </main>
+</body>
+</html>

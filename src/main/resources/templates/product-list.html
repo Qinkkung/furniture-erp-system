@@ -5,57 +5,46 @@
         pageContent=~{ :: #product-list-content }
       )}">
 <head>
-    </head>
+</head>
 <body>
-
     <main id="product-list-content">
+        <h1>รายการสินค้า (Admin)</h1>
         
-        <style>
-            table { border-collapse: collapse; margin-top: 15px; width: 100%;}
-            th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-            th { background-color: #f2f2f2; }
-            a { text-decoration: none; color: #007bff; }
-            a:hover { text-decoration: underline; }
-            button { background-color: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; }
-            button:hover { background-color: #0056b3; }
-        </style>
+        <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+        <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
 
-        <h1>รายการสินค้าทั้งหมด</h1>
+        <a th:href="@{/products/new}" class="btn btn-primary mb-3">+ เพิ่มสินค้าใหม่</a>
 
-        <p><a th:href="@{/products/new}">
-            <button type="button">+ เพิ่มสินค้าใหม่</button>
-        </a></p>
-
-        <div th:if="${productList.isEmpty()}">
-            <p>ยังไม่มีสินค้าในระบบ</p>
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped" th:unless="${productList.isEmpty()}">
+                <thead class="thead-dark">
+                    <tr>
+                        <th>รหัสสินค้า (ID)</th>
+                        <th>ชื่อสินค้า</th>
+                        <th>หมวดหมู่</th> <th>รายละเอียด</th>
+                        <th>Action</th> 
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="product : ${productList}">
+                        <td th:text="${product.productID}">P-XXX</td>
+                        <td th:text="${product.name}">ชื่อสินค้า...</td>
+                        <td th:text="${categoryNames.get(product.getProductID())}">N/A</td> 
+                        
+                        <td th:text="${product.description}">รายละเอียด...</td>
+                        <td>
+                            <a th:href="@{/products/edit/{id}(id=${product.productID})}" class="btn btn-sm btn-warning">แก้ไข</a> 
+                            <a th:href="@{/products/view/{id}(id=${product.productID})}" class="btn btn-sm btn-info" style="margin-left: 5px;">จัดการ Variants</a> 
+                            
+                            <form th:action="@{/products/delete/{id}(id=${product.productID})}" method="post" style="display:inline;" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบสินค้านี้?');">
+                                <button type="submit" class="btn btn-sm btn-danger" style="margin-left: 5px;">ลบ</button>
+                            </form>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <p th:if="${productList.isEmpty()}" class="mt-3">ไม่พบรายการสินค้า</p>
         </div>
-
-        <table border="1" th:unless="${productList.isEmpty()}">
-            <thead>
-                <tr>
-                    <th>รหัสสินค้า (ID)</th>
-                    <th>ชื่อสินค้า</th>
-                    <th>รายละเอียด</th>
-                    <th>Action</th> 
-                </tr>
-            </thead>
-            <tbody>
-                <tr th:each="product : ${productList}">
-                    <td th:text="${product.productID}">P-XXX</td>
-                    <td th:text="${product.name}">ชื่อสินค้า...</td>
-                    <td th:text="${product.description}">รายละเอียด...</td>
-                    <td>
-                        <a th:href="@{/products/edit/{id}(id=${product.productID})}">แก้ไข</a>
-
-                        <form th:action="@{/products/delete/{id}(id=${product.productID})}" method="post" style="display:inline;" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบสินค้านี้?');">
-                            <button type="submit" style="color:red; border:none; background:none; cursor:pointer; padding:0; margin-left: 5px;">ลบ</button>
-                        </form>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-
     </main>
-
 </body>
 </html>

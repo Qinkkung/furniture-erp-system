@@ -1,134 +1,265 @@
 package com.furnitureshop.furniture_erp_system.controller;
 
+import com.furnitureshop.furniture_erp_system.model.Category;
 import com.furnitureshop.furniture_erp_system.model.Product;
-import com.furnitureshop.furniture_erp_system.model.ProductVariant; // <<< Import ProductVariant
+import com.furnitureshop.furniture_erp_system.model.ProductVariant; 
+import com.furnitureshop.furniture_erp_system.repository.CategoryRepository;
+import com.furnitureshop.furniture_erp_system.repository.ProductRepository;
+import com.furnitureshop.furniture_erp_system.repository.ProductVariantRepository; 
 import com.furnitureshop.furniture_erp_system.service.ProductService;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity; // <<< Import ResponseEntity
+import org.springframework.http.ResponseEntity; 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody; // <<< Import ResponseBody
-
-import java.util.Collections; // <<< Import Collections
-import java.util.List;
-import java.util.Optional; // <<< Import Optional
-import java.util.Set; // <<< Import Set
-import java.util.stream.Collectors; // <<< Import Collectors
-
-// --- Imports ที่เพิ่มเข้ามาสำหรับแก้ไข ---
-import com.furnitureshop.furniture_erp_system.dto.ProductVariantDropdownDto; 
-import org.hibernate.Hibernate; 
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.transaction.annotation.Transactional; 
-// --- จบ Imports ที่เพิ่มเข้ามา ---
+import org.hibernate.Hibernate; 
+
+import java.util.Collections;
+import java.util.HashSet; 
+import java.util.List;
+import java.util.Map; 
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+import com.furnitureshop.furniture_erp_system.dto.ProductVariantDropdownDto; 
 
 
-/**
- * Controller สำหรับจัดการคำขอที่เกี่ยวกับ Product
- */
 @Controller
 @RequestMapping("/products")
 public class ProductController {
 
-    @Autowired
-    private ProductService productService;
+    @Autowired private ProductService productService;
+    @Autowired private ProductRepository productRepository; 
+    @Autowired private CategoryRepository categoryRepository; 
+    @Autowired private ProductVariantRepository productVariantRepository; 
 
-    /**
-     * แสดงรายการสินค้าทั้งหมด
-     */
     @GetMapping("")
+    @Transactional(readOnly = true) 
     public String listProducts(Model model) {
-        List<Product> products = productService.getAllProducts();
+        List<Product> products = productRepository.findAll();
+        products.forEach(product -> Hibernate.initialize(product.getCategories()));
+        Map<String, String> categoryNames = products.stream()
+            .collect(Collectors.toMap(
+                Product::getProductID,
+                product -> product.getCategories().isEmpty() 
+                            ? "N/A" 
+                            : product.getCategories().iterator().next().getName()
+            ));
         model.addAttribute("productList", products);
+        model.addAttribute("categoryNames", categoryNames); 
         return "product-list";
     }
 
-    /**
-     * แสดงฟอร์มเพิ่มสินค้า
-     */
     @GetMapping("/new")
-    public String showAddProductForm(Model model) {
-        Product product = new Product();
-        model.addAttribute("product", product);
+    public String showCreateProductForm(Model model) {
+        model.addAttribute("product", new Product()); 
+        model.addAttribute("allCategories", categoryRepository.findAll());
+        model.addAttribute("isNew", true); 
         return "product-form";
     }
 
-    /**
-     * บันทึกสินค้าใหม่
-     */
-    @PostMapping("/save")
-    public String saveProduct(@ModelAttribute("product") Product product) {
-        productService.createProduct(product);
-        return "redirect:/products";
-    }
-
-    /**
-     * แสดงฟอร์มแก้ไขสินค้า
-     */
     @GetMapping("/edit/{id}")
-    public String showEditProductForm(@PathVariable("id") String id, Model model) {
-        Product product = productService.getProductById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid product Id:" + id));
-        model.addAttribute("product", product);
-        return "product-form";
+    @Transactional(readOnly = true) 
+    public String showEditProductForm(@PathVariable("id") String id, Model model, RedirectAttributes redirectAttributes) {
+        Optional<Product> productOpt = productRepository.findById(id);
+        if (productOpt.isPresent()) {
+            Product product = productOpt.get();
+            Hibernate.initialize(product.getCategories()); 
+            model.addAttribute("product", product);
+            model.addAttribute("allCategories", categoryRepository.findAll());
+            model.addAttribute("isNew", false); 
+            return "product-form";
+        } else {
+            redirectAttributes.addFlashAttribute("errorMessage", "ไม่พบสินค้า ID: " + id);
+            return "redirect:/products";
+        }
     }
-
-    /**
-     * อัปเดตสินค้า
-     */
-    @PostMapping("/update/{id}")
-    public String updateProduct(@PathVariable("id") String id, @ModelAttribute("product") Product product) {
-        productService.updateProduct(id, product);
+    
+    @PostMapping("/save/new")
+    @Transactional
+    public String saveNewProduct(@ModelAttribute Product product, 
+                                 @RequestParam(value = "categoryIds", required = false) List<String> categoryIds, 
+                                 RedirectAttributes redirectAttributes) {
+        
+        if (productRepository.existsById(product.getProductID())) {
+            redirectAttributes.addFlashAttribute("errorMessage", "รหัสสินค้า '" + product.getProductID() + "' นี้มีอยู่แล้ว!");
+            redirectAttributes.addFlashAttribute("product", product); 
+            return "redirect:/products/new";
+        }
+        product.setCategories(new HashSet<>()); 
+        if (categoryIds != null) {
+            categoryIds.forEach(id -> {
+                categoryRepository.findById(id).ifPresent(category -> product.getCategories().add(category));
+            });
+        }
+        productRepository.save(product); 
+        redirectAttributes.addFlashAttribute("successMessage", "สร้างสินค้า '" + product.getName() + "' สำเร็จ!");
         return "redirect:/products";
     }
 
     /**
-     * ลบสินค้า
+     * [FIX] Method ใหม่สำหรับ "อัปเดตสินค้าเดิม" เท่านั้น
+     * FIX: เพิ่ม Hibernate.initialize() เพื่อแก้ Lazy Loading Exception
      */
+    @PostMapping("/save/update")
+    @Transactional
+    public String saveUpdateProduct(@ModelAttribute Product product, 
+                                    @RequestParam(value = "categoryIds", required = false) List<String> categoryIds, 
+                                    RedirectAttributes redirectAttributes) {
+
+        Product existingProduct = productRepository.findById(product.getProductID())
+            .orElseThrow(() -> new RuntimeException("Product not found ID: " + product.getProductID()));
+            
+        // *** (FIX) บังคับโหลด Categories เก่าก่อนที่จะ .clear() ***
+        Hibernate.initialize(existingProduct.getCategories()); 
+            
+        existingProduct.setName(product.getName());
+        existingProduct.setDescription(product.getDescription());
+        
+        existingProduct.getCategories().clear(); 
+        if (categoryIds != null) {
+            categoryIds.forEach(id -> {
+                categoryRepository.findById(id).ifPresent(category -> existingProduct.getCategories().add(category));
+            });
+        }
+        
+        productRepository.save(existingProduct); 
+        redirectAttributes.addFlashAttribute("successMessage", "แก้ไขสินค้า '" + existingProduct.getName() + "' สำเร็จ!");
+        return "redirect:/products";
+    }
+
     @PostMapping("/delete/{id}")
-    public String deleteProduct(@PathVariable("id") String id) {
-        productService.deleteProduct(id);
+    @Transactional
+    public String deleteProduct(@PathVariable("id") String id, RedirectAttributes redirectAttributes) {
+        try {
+            // (*** นี่คือจุดที่แก้ไข ***)
+            Product product = productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found ID: " + id)); // (ต้องเป็นประโยคเดียวกัน)
+
+            // (ตรวจสอบ Variants ก่อนลบ)
+            if (product.getVariants() != null && !product.getVariants().isEmpty()) {
+                redirectAttributes.addFlashAttribute("errorMessage", "ลบสินค้า '" + product.getName() + "' ไม่ได้! ต้องลบ Variants ทั้งหมดก่อน");
+                return "redirect:/products/view/" + id; 
+            }
+            
+            product.getCategories().clear();
+            productRepository.save(product);
+            productRepository.delete(product); 
+            redirectAttributes.addFlashAttribute("successMessage", "ลบสินค้า '" + product.getName() + "' สำเร็จ!");
+        
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "เกิดข้อผิดพลาดในการลบ: " + e.getMessage());
+        }
         return "redirect:/products";
     }
 
-    // --- API Endpoint สำหรับ JavaScript ---
+    // =======================================================
+    // <<< Product Variant Management >>>
+    // =======================================================
 
-    /**
-     * API Endpoint สำหรับดึง Variants ของ Product ที่กำหนด (สำหรับ JavaScript เรียกใช้)
-     * (*** นี่คือ Method ที่แก้ไขใหม่ทั้งหมด ***)
-     * @param productId รหัส Product ที่ส่งมาจาก JavaScript
-     * @return Set ของ ProductVariantDropdownDto ในรูปแบบ JSON
-     */
-    @GetMapping("/variants/{productId}") // URL เช่น /products/variants/P-001
-    @ResponseBody // <<< บอก Spring ว่าให้ส่งข้อมูลกลับเป็น JSON
-    @Transactional(readOnly = true) // <<< (1) เพิ่ม Transactional
-    public ResponseEntity<Set<ProductVariantDropdownDto>> getVariantsByProductId(@PathVariable String productId) {
-        Optional<Product> productOpt = productService.getProductById(productId);
+    @GetMapping("/view/{id}")
+    @Transactional(readOnly = true) 
+    public String showProductDetail(@PathVariable("id") String id, Model model, RedirectAttributes redirectAttributes) {
+        Optional<Product> productOpt = productRepository.findById(id); 
 
         if (productOpt.isPresent()) {
             Product product = productOpt.get();
-            // (2) บังคับโหลด (Initialize) collection ที่เป็น LAZY
+            Hibernate.initialize(product.getVariants()); 
+            model.addAttribute("product", product);
+            model.addAttribute("variants", product.getVariants()); 
+            return "product-detail"; 
+        } else {
+            redirectAttributes.addFlashAttribute("errorMessage", "ไม่พบสินค้า ID: " + id);
+            return "redirect:/products";
+        }
+    }
+
+    @GetMapping("/variant/new")
+    public String showCreateVariantForm(@RequestParam("productId") String productId, Model model, RedirectAttributes redirectAttributes) {
+        Optional<Product> productOpt = productRepository.findById(productId);
+        if (!productOpt.isPresent()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "ไม่พบ Product หลัก");
+            return "redirect:/products";
+        }
+        ProductVariant newVariant = new ProductVariant();
+        newVariant.setProduct(productOpt.get()); 
+        
+        model.addAttribute("variant", newVariant);
+        model.addAttribute("product", productOpt.get());
+        model.addAttribute("isNew", true);
+        return "product-variant-form"; 
+    }
+
+    @GetMapping("/variant/edit/{id}")
+    public String showEditVariantForm(@PathVariable("id") String id, Model model, RedirectAttributes redirectAttributes) {
+        Optional<ProductVariant> variantOpt = productVariantRepository.findById(id);
+        if (!variantOpt.isPresent()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "ไม่พบ Variant ID: " + id);
+            return "redirect:/products";
+        }
+        model.addAttribute("variant", variantOpt.get());
+        model.addAttribute("product", variantOpt.get().getProduct()); 
+        model.addAttribute("isNew", false);
+        return "product-variant-form"; 
+    }
+
+    @PostMapping("/variant/save")
+    public String saveProductVariant(
+            @ModelAttribute ProductVariant variant, 
+            @RequestParam("productId") String productId, 
+            RedirectAttributes redirectAttributes) {
+        
+        Optional<Product> productOpt = productRepository.findById(productId);
+        if (!productOpt.isPresent()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "ไม่พบ Product หลักที่เชื่อมโยง");
+            return "redirect:/products";
+        }
+        Product product = productOpt.get();
+        variant.setProduct(product); 
+
+        if (variant.getVariantID() == null || variant.getVariantID().isEmpty()) {
+            variant.setVariantID(productService.generateNewVariantId(productId)); 
+        }
+
+        try {
+            productVariantRepository.save(variant);
+            redirectAttributes.addFlashAttribute("successMessage", "บันทึก Variant '" + variant.getVariantID() + "' สำเร็จ!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "เกิดข้อผิดพลาดในการบันทึก Variant: " + e.getMessage());
+        }
+        return "redirect:/products/view/" + productId;
+    }
+    
+    // =======================================================
+    // <<< API Endpoints (สำหรับ JavaScript/Dropdown) >>>
+    // =======================================================
+
+    @GetMapping("/variants/{productId}") 
+    @ResponseBody 
+    @Transactional(readOnly = true) 
+    public ResponseEntity<Set<ProductVariantDropdownDto>> getVariantsByProductId(@PathVariable String productId) {
+        Optional<Product> productOpt = productRepository.findById(productId);
+
+        if (productOpt.isPresent()) {
+            Product product = productOpt.get();
             Hibernate.initialize(product.getVariants()); 
             
-            // (3) แปลง Entity (ProductVariant) เป็น DTO (ProductVariantDropdownDto)
             Set<ProductVariantDropdownDto> variantsDto = product.getVariants().stream()
                 .map(variant -> new ProductVariantDropdownDto(
-                    variant.getVariantID(),   // <<< (4) นี่คือตัวที่ขาดไป
-                    variant.getSkuCode(),
-                    product.getName(),      // <<< (5) เอาชื่อจาก Product แม่
+                    variant.getVariantID(),      
+                    variant.getSkuCode(),        
+                    product.getName(),      
                     variant.getAttributes(),
                     variant.getUnitPrice()
                 ))
                 .collect(Collectors.toSet());
 
-            return ResponseEntity.ok(variantsDto); // ส่ง DTO กลับไป
+            return ResponseEntity.ok(variantsDto); 
         } else {
-            return ResponseEntity.ok(Collections.emptySet()); // ส่ง Set ว่างกลับไป
+            return ResponseEntity.ok(Collections.emptySet()); 
         }
     }
 }

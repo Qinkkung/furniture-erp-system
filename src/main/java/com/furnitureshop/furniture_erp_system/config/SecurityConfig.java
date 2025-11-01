@@ -39,7 +39,7 @@ public class SecurityConfig {
 
     /**
      * Bean นี้คือ "หัวใจของกฎ"
-     * เราจะกำหนดว่า URL path ไหน ใครเข้าได้บ้าง
+     * (*** นี่คือเวอร์ชันที่แก้ไขลำดับ และเพิ่ม /pos/** แล้ว ***)
      */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -48,19 +48,18 @@ public class SecurityConfig {
                 // 1. อนุญาตให้ทุกคนเข้าถึงหน้า Login และไฟล์ CSS, รูปภาพ
                 .requestMatchers("/login", "/css/**", "/images/**").permitAll()
 
-                // 2. กำหนดสิทธิ์ตาม Role (*** แก้ไขลำดับตรงนี้ ***)
+                // 2. กำหนดสิทธิ์ตาม Role (*** นี่คือลำดับที่ถูกต้อง ***)
 
-                // === (ย้ายขึ้นมา) ===
-                // กฎที่ "เจาะจง" ต้องอยู่ก่อนกฎที่ "กว้าง"
+                // (API ที่เจาะจง ต้องอยู่ก่อน)
                 .requestMatchers("/products/variants/**", "/api/inventory/ats/**").hasAnyRole("Sales", "Stock", "Admin")
-                .requestMatchers("/api/customers/**").hasRole("Sales") // (API ลูกค้า ให้ Sales ใช้ได้)
+                .requestMatchers("/api/customers/**").hasRole("Sales") 
 
-                // === (กฎเดิม) ===
-                .requestMatchers("/sales-orders/**").hasRole("Sales")
+                // (กฎของ Role หลัก)
+                .requestMatchers("/sales-orders/**", "/pos/**").hasRole("Sales") // <-- (เพิ่ม /pos/**)
                 .requestMatchers("/stock/**", "/purchase-orders/**").hasRole("Stock")
                 .requestMatchers("/shipments/**").hasRole("Delivery")
                 
-                // (กฎนี้ต้องอยู่ "หลัง" กฎ /products/variants/**)
+                // (กฎที่กว้างที่สุด ต้องอยู่ล่างสุด)
                 .requestMatchers("/products/**", "/admin/**").hasRole("Admin")
 
                 // 3. หน้า Dashboard (หน้าแรก) และหน้าอื่นๆ ต้อง "Login ก่อน"
@@ -68,13 +67,13 @@ public class SecurityConfig {
                 .anyRequest().authenticated() // หน้าอื่นๆ ที่ไม่ได้ระบุ ต้อง Login ทั้งหมด
             )
             .formLogin(form -> form
-                .loginPage("/login") 
-                .loginProcessingUrl("/login") 
-                .defaultSuccessUrl("/", true) 
-                .permitAll() 
+                .loginPage("/login") // บอกว่าหน้า Login ของเราคือ URL นี้
+                .loginProcessingUrl("/login") // URL ที่ <form> จะส่งข้อมูลไป (ใช้ /login เหมือนกัน)
+                .defaultSuccessUrl("/", true) // ถ้า Login สำเร็จ ให้ไปหน้าแรก
+                .permitAll() // ทุกคนต้องเห็นหน้า Login
             )
             .logout(logout -> logout
-                .logoutSuccessUrl("/login?logout") 
+                .logoutSuccessUrl("/login?logout") // ถ้า Logout สำเร็จ ให้กลับไปหน้า Login
                 .permitAll()
             );
 

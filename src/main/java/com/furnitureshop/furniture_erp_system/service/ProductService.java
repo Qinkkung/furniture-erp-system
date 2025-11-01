@@ -151,4 +151,22 @@ public class ProductService {
         product.getCategories().remove(category);
         return productRepository.save(product);
     }
+    
+    // === NEW: Helper Methods for ID Generation (Fix for Controller) ===
+
+    /**
+     * Helper Method สำหรับสร้าง Product ID ใหม่ (ใช้ใน ProductController)
+     */
+    public String generateNewProductId() {
+        // NOTE: ใน Production ควรใช้ Sequence หรือ UUID ที่ปลอดภัยกว่า
+        return "P-" + System.currentTimeMillis();
+    }
+    
+    /**
+     * Helper Method สำหรับสร้าง Variant ID ใหม่ (ใช้ใน ProductController)
+     */
+    public String generateNewVariantId(String productId) {
+        // สร้าง ID โดยใช้ Product ID เป็นส่วนประกอบ (เช่น V-P-001-TIMESTAMP)
+        return "V-" + productId.replace("P-", "") + "-" + System.currentTimeMillis();
+    }
 }
